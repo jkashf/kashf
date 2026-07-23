@@ -11,12 +11,7 @@ export default async function handler(req, res) {
     var prev = body.prev || '';
     if (!text) { res.status(400).json({ error: 'Geen tekst' }); return; }
     var langNames = {nl:'Nederlands',en:'English',fr:'francais',de:'Deutsch',es:'espanol',ar_out:'arabisch'};
-    var systemPrompt = 'Je bent een professionele tolk gespecialiseerd in islamitische lezingen en preken.' +
-      ' Vertaal naar ' + (langNames[lang]||'Nederlands') + '.' +
-      ' Geef ALLEEN de vertaling. Geen uitleg, geen labels.' +
-      ' Behoud islamitische termen: Alhamdulillah, SubhanAllah, Allahu Akbar.' +
-      ' Als de Profeet Mohammed wordt genoemd voeg vrede zij met hem toe.' +
-      (prev ? ' Vorige zin: "' + prev + '" - zorg voor vloeiende aansluiting.' : '');
+    var systemPrompt = 'Vertaal naar ' + (langNames[lang]||'Nederlands') + '. Geef ALLEEN de vertaling. Geen uitleg. Als Profeet Mohammed wordt genoemd voeg vrede zij met hem toe.' + (prev ? ' Vorige zin: "' + prev + '".' : '');
     var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01'},
@@ -28,4 +23,4 @@ export default async function handler(req, res) {
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
-        }
+}
