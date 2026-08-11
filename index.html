@@ -750,7 +750,18 @@ function downloadPDF(){
   t.style.display='block';t.textContent='\u2713 Opgeslagen! Open in browser \u2192 Afdrukken \u2192 PDF';
   setTimeout(function(){t.style.display='none';t.style.background='';t.style.color='';t.style.borderColor='';},4000);
 }
+function showStartTip(){
+  var m=document.getElementById('start-tip-modal');
+  m.style.display='flex';
+  m.style.pointerEvents='auto';
+}
 
+function closeStartTip(){
+  var m=document.getElementById('start-tip-modal');
+  m.style.display='none';
+  m.style.pointerEvents='none';
+  startSession();
+}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
 <div id="start-tip-modal" style="display:none;pointer-events:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;align-items:center;justify-content:center;padding:24px"><div style="background:#FDFCFA;border-radius:20px;padding:32px 28px;max-width:340px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15)"><div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:#B8964A;margin-bottom:16px">&#x643;&#x634;&#x641;</div><p style="font-family:'Playfair Display',serif;font-size:0.95rem;color:#2A2018;line-height:1.75;margin-bottom:16px">Elke afleiding tijdens de khutbah inclusief telefoongebruik valt onder ijdel gepraat. Start Kashf voor de preek, leg je telefoon neer en luister. Zet meldingen uit.</p><p style="font-size:0.65rem;color:#C8B890;margin-bottom:20px;font-style:italic">Gebaseerd op Bukhari en Muslim</p><button onclick="closeStartTip()" style="width:100%;background:#0A0A0A;color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent">Begrepen, start</button></div></div>
