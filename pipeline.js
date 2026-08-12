@@ -21,6 +21,8 @@
     maximumTranslationCharacters: 1800
   });
 
+  const ISLAMIC_TERMS = Object.freeze(['taqwa', 'dhikr', 'sunnah', 'fitrah', 'tawakkul']);
+
   const MERGE_CONFIG = Object.freeze({
     maximumWaitMs: 9500,
     maximumPendingCharacters: 280,
@@ -129,9 +131,11 @@
 
   function buildContext(passages, config = CONTEXT_CONFIG) {
     const recent = (Array.isArray(passages) ? passages : []).slice(-config.maximumPassages);
+    const allTranslations = (Array.isArray(passages) ? passages : []).map(item => normalizeTranscript(item.translation)).join(' ');
     return {
       recentOriginals: takeRecentWithinLimit(recent.map(item => item.originalTranscript), config.maximumOriginalCharacters),
-      recentTranslations: takeRecentWithinLimit(recent.map(item => item.translation), config.maximumTranslationCharacters)
+      recentTranslations: takeRecentWithinLimit(recent.map(item => item.translation), config.maximumTranslationCharacters),
+      introducedIslamicTerms: ISLAMIC_TERMS.filter(term => new RegExp(`(?:^|[^\\p{L}])${term}(?:[^\\p{L}]|$)`, 'iu').test(allTranslations))
     };
   }
 
@@ -158,6 +162,7 @@
   return Object.freeze({
     VAD_CONFIG,
     CONTEXT_CONFIG,
+    ISLAMIC_TERMS,
     MERGE_CONFIG,
     HALLUCINATION_PATTERNS,
     decideVad,

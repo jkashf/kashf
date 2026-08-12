@@ -47,6 +47,12 @@ const passages = [
 const context = buildContext(passages);
 assert.deepEqual(context.recentOriginals, ['Eerste onderwerp', 'Tweede onderwerp']);
 assert.ok(!context.recentOriginals.includes('NIEUWE TEKST'), 'context may not fabricate or replace new text');
+assert.deepEqual(context.introducedIslamicTerms, []);
+
+const firstTaqwaContext = buildContext([{ originalTranscript: 'التقوى', translation: 'Taqwa (bewust leven met ontzag voor Allah ﷺ) beschermt het hart.' }]);
+assert.deepEqual(firstTaqwaContext.introducedIslamicTerms, ['taqwa'], 'first successful introduction must mark taqwa as introduced');
+const followupTaqwaPayload = buildTranslationPayload({ transcript: 'والتقوى هنا', sourceLanguage: 'ar', targetLanguage: 'nl', passages: [{ originalTranscript: 'التقوى', translation: 'Taqwa (bewust leven met ontzag voor Allah ﷺ) beschermt het hart.' }] });
+assert.deepEqual(followupTaqwaPayload.context.introducedIslamicTerms, ['taqwa'], 'follow-up must tell the translator not to repeat the explanation');
 
 for (const targetLanguage of ['nl', 'en', 'fr']) {
   const payload = buildTranslationPayload({ transcript: 'NIEUWE TEKST', sourceLanguage: 'ar', targetLanguage, passages });
