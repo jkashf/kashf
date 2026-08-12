@@ -118,7 +118,7 @@ window.__kashfSplashFailsafe=setTimeout(function(){
       </div>
       <div class="live-actions">
         <button class="action-btn pause-btn" id="pause-btn" onclick="togglePause()">Pauzeer</button>
-        <button class="action-btn download-btn" onclick="downloadPDF()">&#8595; PDF</button>
+        <button class="action-btn download-btn" id="download-btn" onclick="downloadPDF()">&#8595; PDF</button>
         <button class="action-btn back-btn-live" onclick="askConfirmStop()" style="color:var(--red);border-color:rgba(192,57,43,0.3);background:rgba(192,57,43,0.05)">Stop sessie</button>
       </div>
     </div>
@@ -163,9 +163,10 @@ window.__kashfSplashFailsafe=setTimeout(function(){
 
 <script src="translations.js" defer></script>
 <script src="pipeline.js" defer></script>
+<script src="khutbah-buffer.js" defer></script>
 <script src="audio.js" defer></script>
 <script src="boot.js" defer></script>
 <script src="app.js" defer></script>
-<div id="start-tip-modal" style="display:none;pointer-events:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;align-items:center;justify-content:center;padding:24px"><div style="background:#FDFCFA;border-radius:20px;padding:32px 28px;max-width:340px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15)"><div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:#B8964A;margin-bottom:16px">&#x643;&#x634;&#x641;</div><p style="font-family:'Playfair Display',serif;font-size:0.95rem;color:#2A2018;line-height:1.75;margin-bottom:16px">Elke afleiding tijdens de khutbah inclusief telefoongebruik valt onder ijdel gepraat. Start Kashf voor de preek, leg je telefoon neer en luister. Zet meldingen uit.</p><p style="font-size:0.65rem;color:#C8B890;margin-bottom:20px;font-style:italic">Gebaseerd op Bukhari en Muslim</p><button onclick="closeStartTip()" style="width:100%;background:#0A0A0A;color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent">Begrepen, start</button></div></div>
+<div id="start-tip-modal" style="display:none;pointer-events:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;align-items:center;justify-content:center;padding:24px"><div style="background:#FDFCFA;border-radius:20px;padding:32px 28px;max-width:340px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15)"><div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:#B8964A;margin-bottom:16px">&#x643;&#x634;&#x641;</div><p style="font-family:'Playfair Display',serif;font-size:1rem;color:#2A2018;line-height:1.6;margin-bottom:12px">Blijf luisteren, niet scrollen.</p><p style="font-size:0.78rem;color:#8F7A55;line-height:1.7;margin-bottom:14px">Kashf kan bewust iets achterlopen, zodat de vertaling natuurlijker en completer is. Terugscrollen is tijdens de actieve khutbah bewust niet beschikbaar. Gaat de tekst even te snel? Laat hem gerust doorgaan.</p><p style="font-size:0.75rem;color:#A18D68;line-height:1.65;margin-bottom:18px">Na de khutbah kun je alles rustig teruglezen en later als PDF bewaren. Leg je telefoon neer, zet Niet storen aan en laat Kashf voor je meelopen.</p><button onclick="closeStartTip()" style="width:100%;background:#0A0A0A;color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent">Begrepen, start</button></div></div>
 </body>
 </html>

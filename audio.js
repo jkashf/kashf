@@ -164,7 +164,12 @@
           else this.callbacks.onError?.(code, metadata);
           return;
         }
-        if (data.text && data.text.trim()) await this.callbacks.onTranscript?.(data.text.trim(), metadata);
+        if (data.text && data.text.trim()) {
+          metadata.transcriptionQuality = data.transcriptionQuality || null;
+          metadata.transcriptCompletedAt = Date.now();
+          metadata.transcriptLatencyMs = metadata.transcriptCompletedAt - metadata.endedAt;
+          await this.callbacks.onTranscript?.(data.text.trim(), metadata);
+        }
       } catch (error) {
         if (error.name !== 'AbortError' && this.isCurrent(metadata.sessionId)) {
           console.error('[audio] request failed', { name: error.name, message: error.message });

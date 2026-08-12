@@ -3,13 +3,15 @@
 // =====================
 const { UI, SPEECH_LANGS, WHISPER_LANGS } = window.KashfI18n;
 const { filterTranscript, buildTranslationPayload, insertPassageInOrder, isCurrentSession, MERGE_CONFIG, decidePendingTranscript } = window.KashfPipeline;
+const { KhutbahBuffer, evaluateShortTranscript } = window.KashfKhutbahBuffer;
 
 const preferences={interfaceLanguage:'nl',sourceLanguage:'ar',targetLanguage:'nl'};
-const session={mode:'khutbah',paused:false,id:null,lastTranscript:'',translationAbortController:null,pendingTranscript:null,pendingTimer:null};
+const session={mode:'khutbah',paused:false,ended:false,id:null,lastTranscript:'',translationAbortController:null,pendingTranscript:null,pendingTimer:null};
 let outLang=preferences.targetLanguage, srcLang=preferences.sourceLanguage, paused=session.paused;
 let processingEl=null, lastTranslation='', allTranslations=[];
 let wakeLock=null, doNotDisturbShown=false, reminderIndex=0, reminderInterval=null;
 const audioController=new window.KashfAudioController({speechLanguages:SPEECH_LANGS});
+let khutbahBuffer=null;
 
 function generateSessionId(){
   return (window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():'session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
@@ -21,6 +23,10 @@ function abortTranslation(){
 function isDevelopmentHost(){return location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.hostname.endsWith('.vercel.app');}
 function logTranscriptRejection(reason){if(isDevelopmentHost())console.info('[Kashf transcript] rejected',{reason:reason});}
 function clearPendingTranscript(){clearTimeout(session.pendingTimer);session.pendingTimer=null;session.pendingTranscript=null;}
+function isKhutbahMode(){return session.mode==='khutbah';}
+function createKhutbahBuffer(){
+  return new KhutbahBuffer({onFlush:translateKhutbahUnit});
+}
 
 function u(k){return(UI[outLang]||UI.nl)[k]||k;}
 
@@ -189,12 +195,14 @@ function startSession(){
   document.getElementById('live').classList.remove('hidden');
   document.getElementById('trans-feed').innerHTML='';
   addEmptyState();
-  session.id=generateSessionId();session.lastTranscript='';session.paused=false;clearPendingTranscript();
+  session.id=generateSessionId();session.lastTranscript='';session.paused=false;session.ended=false;clearPendingTranscript();
+  khutbahBuffer=isKhutbahMode()?createKhutbahBuffer():null;
   lastTranslation='';allTranslations=[];paused=false;
   history.pushState({page:'live'},'','#live');
   lockOrientation();
   requestWakeLock();
   showDoNotDisturb();
+  setKhutbahScrollLock(isKhutbahMode());
   startAudio();
 }
 
@@ -206,18 +214,20 @@ function addEmptyState(){
 }
 
 function askConfirmStop(){
+  if(session.ended){goBack();return;}
   document.getElementById('confirm-modal').style.display='flex';
 }
 function closeConfirm(){
   document.getElementById('confirm-modal').style.display='none';
 }
-function confirmStop(){
+async function confirmStop(){
   document.getElementById('confirm-modal').style.display='none';
   audioController.stop();
-  abortTranslation();
+  if(khutbahBuffer)await khutbahBuffer.flush('STOP_FLUSH');
   clearPendingTranscript();
-  session.id=null;
+  session.ended=true;
   releaseWakeLock();
+  setKhutbahScrollLock(false);
   // Teller verhogen
   sessionCount++;
   localStorage.setItem('kashf_sessions',sessionCount);
@@ -228,7 +238,7 @@ function showThanks(){
 }
 function closeThanks(){
   document.getElementById('thanks-modal').style.display='none';
-  goBack();
+  if(!session.ended)goBack();
 }
 
 function goBack(){
@@ -236,8 +246,11 @@ function goBack(){
   audioController.stop();
   abortTranslation();
   clearPendingTranscript();
+  if(khutbahBuffer)khutbahBuffer.stop();
+  khutbahBuffer=null;
   session.id=null;
   releaseWakeLock();
+  setKhutbahScrollLock(false);
   doNotDisturbShown=false;
   document.getElementById('live').classList.add('hidden');
   document.getElementById('home').classList.remove('hidden');
@@ -249,12 +262,33 @@ window.addEventListener('popstate',function(){
   if(!document.getElementById('live').classList.contains('hidden')) askConfirmStop();
 });
 
-function togglePause(){
+function keepKhutbahAtLive(){
+  if(!isKhutbahMode()||session.ended)return;
+  var feed=document.getElementById('trans-feed');
+  feed.scrollTop=feed.scrollHeight;
+}
+function blockKhutbahScroll(event){
+  if(isKhutbahMode()&&!session.ended){event.preventDefault();keepKhutbahAtLive();}
+}
+function setKhutbahScrollLock(enabled){
+  var feed=document.getElementById('trans-feed');
+  feed.classList.toggle('khutbah-scroll-locked',enabled);
+  feed.removeEventListener('wheel',blockKhutbahScroll);
+  feed.removeEventListener('touchmove',blockKhutbahScroll);
+  if(enabled){
+    feed.addEventListener('wheel',blockKhutbahScroll,{passive:false});
+    feed.addEventListener('touchmove',blockKhutbahScroll,{passive:false});
+    keepKhutbahAtLive();
+  }
+  document.getElementById('download-btn').style.display=enabled?'none':'';
+}
+
+async function togglePause(){
   if(!paused){
     paused=true;session.paused=true;
     audioController.pause();
-    abortTranslation();
     flushPendingTranscript();
+    if(khutbahBuffer)await khutbahBuffer.pause();
     releaseWakeLock();
     setStatus('paused',u('paused'));
     document.getElementById('pause-btn').textContent=u('resume');
@@ -295,7 +329,11 @@ function startAudio(){
       document.getElementById('heard-txt').textContent=text;
       var filtered=filterTranscript(text,session.lastTranscript);
       if(!filtered.accepted){logTranscriptRejection(filtered.code);return;}
-      await queueTranscriptForTranslation(filtered.text,metadata);
+      var shortDecision=evaluateShortTranscript(filtered.text,metadata);
+      if(!shortDecision.accepted){logTranscriptRejection(shortDecision.reason);return;}
+      session.lastTranscript=filtered.text;
+      if(isKhutbahMode())await khutbahBuffer.add({text:filtered.text,...metadata});
+      else await queueTranscriptForTranslation(filtered.text,metadata);
     },
     onRejected:function(reason){logTranscriptRejection(reason);},
     onError:function(code){
@@ -307,6 +345,23 @@ function startAudio(){
       };
       showErr(messages[code]||u('connErr'));
     }
+  });
+}
+
+async function translateKhutbahUnit(unit){
+  if(!isCurrentSession(session.id,unit.sessionId))return;
+  await translatePassage(unit.transcript,{
+    sessionId:unit.sessionId,
+    sequenceNumber:unit.sequenceNumber,
+    timestamp:unit.timestamp,
+    startedAt:unit.startedAt,
+    endedAt:unit.endedAt,
+    transcriptChunks:unit.transcriptChunks,
+    mergedChunkCount:unit.mergedChunkCount,
+    bufferDurationMs:unit.bufferDurationMs,
+    liveLatencyMs:unit.liveLatencyMs,
+    transcriptLatencyMs:unit.transcriptLatencyMs,
+    flushReason:unit.flushReason
   });
 }
 
@@ -337,6 +392,7 @@ async function translatePassage(text,metadata){
   showProcessing();
   setStatus('processing',u('processing'));
   var controller=new AbortController();
+  var translationStartedAt=Date.now();
   session.translationAbortController=controller;
   try{
     var payload=buildTranslationPayload({transcript:text,sourceLanguage:srcLang,targetLanguage:outLang,passages:allTranslations});
@@ -348,6 +404,7 @@ async function translatePassage(text,metadata){
       throw new Error(code||'TRANSLATION_ERROR');
     }
     var tx=data.translation&&data.translation.trim();
+    var translationCompletedAt=Date.now();
     hideProcessing();
     if(tx){
       lastTranslation=tx;
@@ -359,7 +416,17 @@ async function translatePassage(text,metadata){
         translation:tx,
         sourceLanguage:srcLang,
         targetLanguage:outLang
+        ,audioStartedAt:metadata.startedAt||null
+        ,audioEndedAt:metadata.endedAt||null
+        ,transcriptChunks:metadata.transcriptChunks||[{sequenceNumber:metadata.sequenceNumber,text:text}]
+        ,mergedChunkCount:metadata.mergedChunkCount||1
+        ,bufferDurationMs:metadata.bufferDurationMs||0
+        ,transcriptLatencyMs:metadata.transcriptLatencyMs||null
+        ,translationLatencyMs:translationCompletedAt-translationStartedAt
+        ,liveLatencyMs:Date.now()-(metadata.startedAt||Date.now())
+        ,flushReason:metadata.flushReason||'DIRECT_MODE'
       });
+      logTranslationUnit(allTranslations[allTranslations.length-1]);
     }
   }catch(e){
     if(e.name==='AbortError')return;
@@ -368,6 +435,24 @@ async function translatePassage(text,metadata){
   }
   if(session.translationAbortController===controller)session.translationAbortController=null;
   if(!paused) setStatus('listening',u('listening'));
+}
+
+function logTranslationUnit(passage){
+  if(!isDevelopmentHost()||!passage)return;
+  console.info('[Kashf unit]',{
+    transcriptChunks:passage.transcriptChunks,
+    mergedChunkCount:passage.mergedChunkCount,
+    originalTranscript:passage.originalTranscript,
+    translation:passage.translation,
+    audioStartedAt:passage.audioStartedAt,
+    audioEndedAt:passage.audioEndedAt,
+    bufferDurationMs:passage.bufferDurationMs,
+    transcriptLatencyMs:passage.transcriptLatencyMs,
+    translationLatencyMs:passage.translationLatencyMs,
+    liveLatencyMs:passage.liveLatencyMs,
+    flushReason:passage.flushReason,
+    rejectReason:null
+  });
 }
 
 // =====================
@@ -384,14 +469,15 @@ function renderFeed(){
   var empty=document.getElementById('empty-state');
   if(empty) empty.remove();
   feed.querySelectorAll('.trans-entry').forEach(function(entry){entry.remove();});
-  allTranslations.slice().reverse().forEach(function(passage,index){
+  allTranslations.forEach(function(passage,index){
     var entry=document.createElement('div');
-    entry.className='trans-entry '+(index===0?'trans-new':'trans-old');
+    entry.className='trans-entry '+(index===allTranslations.length-1?'trans-new':'trans-old');
     var date=new Date(passage.timestamp);
     var ts=date.getHours()+':'+String(date.getMinutes()).padStart(2,'0');
     entry.innerHTML='<p class="trans-text">'+esc(passage.translation)+'</p><div class="trans-ts">'+ts+'</div>';
     feed.appendChild(entry);
   });
+  keepKhutbahAtLive();
 }
 
 function feedback(btn,type,id){

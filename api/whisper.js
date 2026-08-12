@@ -35,6 +35,11 @@ function numberOrNull(value) {
   return Number.isFinite(Number(value)) ? Number(value) : null;
 }
 
+function aggregateOrNull(values, aggregate) {
+  const numbers = values.filter(value => value !== null);
+  return numbers.length ? aggregate(...numbers) : null;
+}
+
 export function evaluateSegment(segment, config = TRANSCRIPT_FILTER_CONFIG) {
   const text = segment && typeof segment.text === 'string' ? segment.text.trim() : '';
   const noSpeechProbability = numberOrNull(segment && segment.no_speech_prob);
@@ -151,7 +156,13 @@ export default async function handler(req, res) {
       ? acceptedSegments.map(segment => segment.text).join(' ').replace(/\s+/g, ' ').trim()
       : (typeof data.text === 'string' ? data.text.trim() : '');
     if (!text) return sendError(res, 422, 'NO_SPEECH', 'Geen spraak gedetecteerd.');
-    return res.status(200).json({ text, segmentCount: acceptedSegments.length });
+    const acceptedRawSegments = segments.filter(segment => evaluateSegment(segment).accepted);
+    const transcriptionQuality = acceptedRawSegments.length ? {
+      maximumNoSpeechProbability: aggregateOrNull(acceptedRawSegments.map(segment => numberOrNull(segment.no_speech_prob)), Math.max),
+      minimumAverageLogProbability: aggregateOrNull(acceptedRawSegments.map(segment => numberOrNull(segment.avg_logprob)), Math.min),
+      maximumCompressionRatio: aggregateOrNull(acceptedRawSegments.map(segment => numberOrNull(segment.compression_ratio)), Math.max)
+    } : null;
+    return res.status(200).json({ text, segmentCount: acceptedSegments.length, transcriptionQuality });
   } catch (error) {
     console.error('[whisper] request failed', { name: error.name, message: error.message });
     return sendError(res, 502, 'NETWORK_ERROR', 'Transcriptieservice is niet bereikbaar.');

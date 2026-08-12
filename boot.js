@@ -2,6 +2,7 @@
   const REQUIRED_DEPENDENCIES = Object.freeze([
     ['KashfI18n', value => value && value.UI && value.SPEECH_LANGS && value.WHISPER_LANGS],
     ['KashfPipeline', value => value && typeof value.filterTranscript === 'function'],
+    ['KashfKhutbahBuffer', value => value && typeof value.KhutbahBuffer === 'function'],
     ['KashfAudioController', value => typeof value === 'function']
   ]);
 
