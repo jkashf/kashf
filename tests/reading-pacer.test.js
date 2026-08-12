@@ -70,5 +70,63 @@ assert.notEqual(lag.translationLagMs, lag.readingLagMs, 'translation and reading
   assert.equal(noSummaryPacer.allInOrder().map(item => item.translation).join(' '), `${largeTranslation} ${sentenceA}`, 'growing queue must never summarize or drop content');
   noSummaryPacer.stop();
 
+  // Regression: two minutes of pipeline output while the first passage is visible.
+  const lifecycle = [];
+  const continuousShown = [];
+  const continuousHistory = [];
+  const continuousPacer = new ReadingPacer({
+    config: { minimumDisplayMs: 15, maximumDisplayMs: 15, breathingPauseMs: 0 },
+    onShow: passage => continuousShown.push(passage),
+    onLifecycle: (event, metadata) => lifecycle.push({ event, metadata })
+  });
+  for (let sequenceNumber = 0; sequenceNumber < 15; sequenceNumber += 1) {
+    const translatedUnit = {
+      ...unit,
+      sequenceNumber,
+      timestamp: new Date(sequenceNumber * 8000).toISOString(),
+      translation: `Volledige passage nummer ${sequenceNumber}.`,
+      originalTranscript: `transcript-${sequenceNumber}`,
+      audioStartedAt: sequenceNumber * 8000,
+      audioEndedAt: (sequenceNumber + 1) * 8000
+    };
+    continuousHistory.push(translatedUnit);
+    continuousPacer.enqueueUnit(translatedUnit);
+  }
+  assert.equal(continuousHistory.length, 15, 'translation history must continue for at least two minutes of chunks');
+  assert.equal(continuousShown.length, 1, 'passage A stays visible while B/C/D independently accumulate');
+  assert.equal(continuousPacer.queue.length, 14);
+  await new Promise(resolve => setTimeout(resolve, 750));
+  assert.equal(continuousShown.length, 15, 'pacer must automatically advance through B, C and later passages');
+  assert.deepEqual(continuousShown.map(item => item.sequenceNumber), Array.from({ length: 15 }, (_, index) => index));
+  assert.equal(continuousPacer.allInOrder().length, 15, 'no translated unit may disappear');
+  assert.ok(lifecycle.some(item => item.event === 'PACER_ENQUEUE'));
+  assert.ok(lifecycle.some(item => item.event === 'PACER_SHOW'));
+  assert.ok(lifecycle.some(item => item.event === 'PACER_ADVANCE'));
+
+  // Exact iPhone regression: queue drains, then later work must wake the pacer again.
+  const wakeShown = [];
+  const wakePacer = new ReadingPacer({
+    config: { minimumDisplayMs: 15, maximumDisplayMs: 15, breathingPauseMs: 0 },
+    onShow: passage => wakeShown.push(passage)
+  });
+  wakePacer.enqueueUnit({ ...unit, sequenceNumber: 100, translation: 'Eerste passage.' });
+  await new Promise(resolve => setTimeout(resolve, 30));
+  assert.equal(wakePacer.current, null, 'after an empty queue the pacer must become idle, not remain blocked by stale current');
+  wakePacer.enqueueUnit({ ...unit, sequenceNumber: 101, translation: 'Latere passage.' });
+  assert.equal(wakeShown.length, 2, 'later arriving passage must restart an idle pacer immediately');
+  assert.equal(wakeShown[1].sequenceNumber, 101);
+
+  // Separate full pause/resume regression after the original active-session bug.
+  wakePacer.pause();
+  wakePacer.enqueueUnit({ ...unit, sequenceNumber: 102, translation: 'Passage tijdens pauze.' });
+  await new Promise(resolve => setTimeout(resolve, 30));
+  assert.equal(wakeShown.length, 2, 'pause must not show new work');
+  wakePacer.resume();
+  await new Promise(resolve => setTimeout(resolve, 300));
+  assert.equal(wakeShown.length, 3, 'resume must continue the preserved queue');
+  assert.equal(wakeShown[2].sequenceNumber, 102);
+  continuousPacer.stop();
+  wakePacer.stop();
+
   console.log('reading pacer tests passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

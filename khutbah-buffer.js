@@ -88,10 +88,11 @@
   }
 
   class KhutbahBuffer {
-    constructor({ config = {}, now = () => Date.now(), onFlush = async () => {} } = {}) {
+    constructor({ config = {}, now = () => Date.now(), onFlush = async () => {}, onLifecycle = () => {} } = {}) {
       this.config = { ...BUFFER_CONFIG, ...config };
       this.now = now;
       this.onFlush = onFlush;
+      this.onLifecycle = onLifecycle;
       this.chunks = [];
       this.timer = null;
       this.queue = Promise.resolve();
@@ -100,6 +101,7 @@
 
     add(chunk) {
       this.chunks.push(chunk);
+      this.onLifecycle('BUFFER_ADD', { sessionId: chunk.sessionId, sequenceNumber: chunk.sequenceNumber, timestamp: this.now(), bufferSize: this.chunks.length });
       const effectiveConfig = this.recoveryMode ? {
         ...this.config,
         maximumChunksPerUnit: this.config.recoveryMaximumChunksPerUnit,
@@ -125,6 +127,7 @@
       if (!this.chunks.length) return Promise.resolve(null);
       const chunks = this.chunks.splice(0);
       const unit = createUnit(chunks, reason, this.now());
+      this.onLifecycle('BUFFER_FLUSH', { sessionId: unit.sessionId, sequenceNumber: unit.sequenceNumber, timestamp: this.now(), bufferSize: chunks.length, mergedChunkCount: unit.mergedChunkCount, flushReason: reason, translationLagMs: unit.liveLatencyMs });
       this.recoveryMode = unit.liveLatencyMs >= this.config.softMaximumLatencyMs
         ? true
         : (unit.liveLatencyMs <= this.config.targetLatencyMs ? false : this.recoveryMode);

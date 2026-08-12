@@ -84,11 +84,12 @@
   }
 
   class ReadingPacer {
-    constructor({ config = {}, now = () => Date.now(), onShow = () => {}, onState = () => {} } = {}) {
+    constructor({ config = {}, now = () => Date.now(), onShow = () => {}, onState = () => {}, onLifecycle = () => {} } = {}) {
       this.config = { ...PACER_CONFIG, ...config };
       this.now = now;
       this.onShow = onShow;
       this.onState = onState;
+      this.onLifecycle = onLifecycle;
       this.queue = [];
       this.current = null;
       this.shown = [];
@@ -101,6 +102,7 @@
     enqueueUnit(unit) {
       const passages = createReadingPassages(unit, this.config);
       this.queue.push(...passages);
+      this.onLifecycle('PACER_ENQUEUE', this.lifecycleMetadata(passages[0]));
       this.emitState();
       if (!this.current && !this.paused) this.showNext();
       return passages;
@@ -109,15 +111,27 @@
     showNext() {
       clearTimeout(this.timer);
       this.timer = null;
-      if (this.paused || !this.queue.length) { this.emitState(); return null; }
+      if (this.paused) { this.emitState(); return null; }
+      if (!this.queue.length) {
+        this.current = null;
+        this.remainingMs = 0;
+        this.visibleStartedAt = null;
+        this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(null));
+        this.emitState();
+        return null;
+      }
       this.current = this.queue.shift();
       this.current.shownAt = this.now();
       this.shown.push(this.current);
       this.visibleStartedAt = this.current.shownAt;
       this.remainingMs = this.current.estimatedReadingTimeMs;
       this.onShow(this.current);
+      this.onLifecycle('PACER_SHOW', this.lifecycleMetadata(this.current));
       this.emitState();
-      this.timer = setTimeout(() => this.showNext(), this.remainingMs);
+      this.timer = setTimeout(() => {
+        this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(this.current));
+        this.showNext();
+      }, this.remainingMs);
       return this.current;
     }
 
@@ -137,7 +151,10 @@
       this.paused = false;
       if (this.current) {
         this.visibleStartedAt = this.now();
-        this.timer = setTimeout(() => this.showNext(), Math.max(250, this.remainingMs));
+        this.timer = setTimeout(() => {
+          this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(this.current));
+          this.showNext();
+        }, Math.max(250, this.remainingMs));
       } else this.showNext();
       this.emitState();
     }
@@ -156,6 +173,22 @@
     }
 
     metrics() { return calculateLag(this.queue, this.current, this.now()); }
+    lifecycleMetadata(passage) {
+      const metrics = this.metrics();
+      return {
+        sessionId: passage && passage.sessionId,
+        sequenceNumber: passage && passage.sequenceNumber,
+        timestamp: this.now(),
+        queueLength: this.queue.length,
+        currentPassageId: passage ? passage.id : null,
+        estimatedDisplayMs: passage ? passage.estimatedReadingTimeMs : 0,
+        timerRemainingMs: this.remainingMs,
+        isPaused: this.paused,
+        translationLagMs: metrics.translationLagMs,
+        readingLagMs: metrics.readingLagMs,
+        totalUserLagMs: metrics.totalUserLagMs
+      };
+    }
     emitState() { this.onState({ queueLength: this.queue.length, current: this.current, paused: this.paused, ...this.metrics() }); }
   }
 

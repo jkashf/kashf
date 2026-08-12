@@ -23,16 +23,18 @@ function abortTranslation(){
   session.translationAbortController=null;
 }
 function isDevelopmentHost(){return location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.hostname.endsWith('.vercel.app');}
+function logLifecycle(event,metadata){window.KashfLifecycle.log(event,metadata);}
 function logTranscriptRejection(reason){if(isDevelopmentHost())console.info('[Kashf transcript] rejected',{reason:reason});}
 function clearPendingTranscript(){clearTimeout(session.pendingTimer);session.pendingTimer=null;session.pendingTranscript=null;}
 function isKhutbahMode(){return session.mode==='khutbah';}
 function createKhutbahBuffer(){
-  return new KhutbahBuffer({onFlush:translateKhutbahUnit});
+  return new KhutbahBuffer({onFlush:translateKhutbahUnit,onLifecycle:logLifecycle});
 }
 function createReadingPacer(){
   return new ReadingPacer({
     onShow:renderCurrentReadingPassage,
-    onState:logReadingState
+    onState:logReadingState,
+    onLifecycle:logLifecycle
   });
 }
 
@@ -345,7 +347,7 @@ function startAudio(){
       var filtered=filterTranscript(text,session.lastTranscript);
       if(!filtered.accepted){logTranscriptRejection(filtered.code);return;}
       var shortDecision=evaluateShortTranscript(filtered.text,metadata);
-      if(!shortDecision.accepted){logTranscriptRejection(shortDecision.reason);return;}
+      if(!shortDecision.accepted){logLifecycle('WHISPER_REJECT',{...metadata,rejectReason:shortDecision.reason});logTranscriptRejection(shortDecision.reason);return;}
       session.lastTranscript=filtered.text;
       if(isKhutbahMode())await khutbahBuffer.add({text:filtered.text,...metadata});
       else await queueTranscriptForTranslation(filtered.text,metadata);
@@ -408,6 +410,7 @@ async function translatePassage(text,metadata){
   setStatus('processing',u('processing'));
   var controller=new AbortController();
   var translationStartedAt=Date.now();
+  logLifecycle('TRANSLATION_START',{sessionId:metadata.sessionId,sequenceNumber:metadata.sequenceNumber,timestamp:translationStartedAt,flushReason:metadata.flushReason||'DIRECT_MODE'});
   session.translationAbortController=controller;
   try{
     var payload=buildTranslationPayload({transcript:text,sourceLanguage:srcLang,targetLanguage:outLang,passages:allTranslations});
@@ -420,6 +423,7 @@ async function translatePassage(text,metadata){
     }
     var tx=data.translation&&data.translation.trim();
     var translationCompletedAt=Date.now();
+    logLifecycle('TRANSLATION_DONE',{sessionId:metadata.sessionId,sequenceNumber:metadata.sequenceNumber,timestamp:translationCompletedAt,translationLagMs:translationCompletedAt-(metadata.startedAt||translationStartedAt),flushReason:metadata.flushReason||'DIRECT_MODE'});
     hideProcessing();
     if(tx){
       lastTranslation=tx;

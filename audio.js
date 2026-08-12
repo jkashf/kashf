@@ -119,11 +119,17 @@
           timestamp: new Date(endedAt).toISOString(),
           vad
         };
+        root.KashfLifecycle?.log('AUDIO_CHUNK', metadata);
         chunks = [];
         chunkStartedAt = endedAt;
         this.currentVadStats = createVadStats(endedAt);
-        if (vad.isSpeech && blob.size > 0) this.enqueueTranscription(blob, metadata);
-        else this.callbacks.onRejected?.('VAD', metadata);
+        if (vad.isSpeech && blob.size > 0) {
+          root.KashfLifecycle?.log('VAD_ACCEPT', metadata);
+          this.enqueueTranscription(blob, metadata);
+        } else {
+          root.KashfLifecycle?.log('VAD_REJECT', { ...metadata, rejectReason: 'VAD' });
+          this.callbacks.onRejected?.('VAD', metadata);
+        }
       };
       this.recorder.start();
       this.chunkTimer = root.setInterval(() => {
@@ -160,7 +166,10 @@
         if (!this.isCurrent(metadata.sessionId)) return;
         if (!response.ok) {
           const code = data.error && data.error.code ? data.error.code : 'TRANSCRIPTION_ERROR';
-          if (code === 'NO_SPEECH') this.callbacks.onRejected?.('NO_SPEECH_METADATA', metadata);
+          if (code === 'NO_SPEECH') {
+            root.KashfLifecycle?.log('WHISPER_REJECT', { ...metadata, rejectReason: 'NO_SPEECH_METADATA' });
+            this.callbacks.onRejected?.('NO_SPEECH_METADATA', metadata);
+          }
           else this.callbacks.onError?.(code, metadata);
           return;
         }
@@ -168,6 +177,7 @@
           metadata.transcriptionQuality = data.transcriptionQuality || null;
           metadata.transcriptCompletedAt = Date.now();
           metadata.transcriptLatencyMs = metadata.transcriptCompletedAt - metadata.endedAt;
+          root.KashfLifecycle?.log('WHISPER_ACCEPT', metadata);
           await this.callbacks.onTranscript?.(data.text.trim(), metadata);
         }
       } catch (error) {
