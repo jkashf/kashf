@@ -24,13 +24,21 @@ function u(k){return(UI[outLang]||UI.nl)[k]||k;}
 // =====================
 // SPLASH
 // =====================
-window.addEventListener('load',function(){
+function dismissSplashNormally(){
   var s=document.getElementById('splash');
   var a=document.getElementById('splash-arabic');
+  if(!s||!a)return;
   setTimeout(function(){a.style.opacity='1';},400);
   setTimeout(function(){s.style.opacity='0';},2200);
-  setTimeout(function(){s.style.display='none';},3100);
-});
+  setTimeout(function(){
+    s.style.display='none';
+    s.style.pointerEvents='none';
+    s.dataset.dismissed='true';
+    clearTimeout(window.__kashfSplashFailsafe);
+  },3100);
+}
+if(document.readyState==='complete')dismissSplashNormally();
+else window.addEventListener('load',dismissSplashNormally,{once:true});
 
 // =====================
 // SESSIE TELLER

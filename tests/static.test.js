@@ -13,7 +13,7 @@ const handlers = [...html.matchAll(/onclick="([A-Za-z_$][\w$]*)\(/g)].map(match 
 const missingHandlers = [...new Set(handlers)].filter(name => !new RegExp(`function\\s+${name}\\s*\\(`).test(app));
 assert.deepEqual(missingHandlers, [], `missing handlers: ${missingHandlers.join(', ')}`);
 
-const expectedOrder = ['translations.js', 'pipeline.js', 'audio.js', 'app.js'];
+const expectedOrder = ['translations.js', 'pipeline.js', 'audio.js', 'boot.js', 'app.js'];
 const positions = expectedOrder.map(file => html.indexOf(`src="${file}"`));
 assert.ok(positions.every(position => position >= 0));
 assert.deepEqual([...positions].sort((a, b) => a - b), positions, 'scripts must load in dependency order');
