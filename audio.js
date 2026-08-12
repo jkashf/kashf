@@ -1,5 +1,6 @@
-(function () {
+(function (root) {
   const MIME_TYPES = ['audio/webm;codecs=opus', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'];
+  const { VAD_CONFIG, decideVad, isCurrentSession } = root.KashfPipeline;
 
   function blobToBase64(blob) {
     return new Promise((resolve, reject) => {
@@ -10,34 +11,48 @@
     });
   }
 
+  function createVadStats(startedAt) {
+    return { startedAt, totalFrames: 0, voicedFrames: 0, maximumRms: 0, maximumPeak: 0 };
+  }
+
   class KashfAudioController {
-    constructor({ speechLanguages, chunkDuration = 8000, minimumBytes = 8000 } = {}) {
+    constructor({ speechLanguages, chunkDuration = 8000, vadConfig = VAD_CONFIG } = {}) {
       this.speechLanguages = speechLanguages || {};
       this.chunkDuration = chunkDuration;
-      this.minimumBytes = minimumBytes;
+      this.vadConfig = { ...VAD_CONFIG, ...vadConfig };
       this.active = false;
+      this.sessionId = null;
+      this.sequenceNumber = 0;
       this.recorder = null;
       this.stream = null;
-      this.timer = null;
+      this.chunkTimer = null;
+      this.vadTimer = null;
+      this.audioContext = null;
+      this.analyser = null;
       this.speechRecognition = null;
       this.pendingTranscript = '';
       this.pendingTimer = null;
       this.processingQueue = Promise.resolve();
+      this.abortControllers = new Set();
       this.callbacks = {};
       this.sourceLanguage = 'ar';
+      this.currentVadStats = null;
     }
 
     get isActive() { return this.active; }
 
-    async start(sourceLanguage, callbacks = {}) {
+    async start({ sessionId, sourceLanguage, sequenceStart = 0 }, callbacks = {}) {
       this.stop();
       this.active = true;
+      this.sessionId = sessionId;
+      this.sequenceNumber = sequenceStart;
       this.sourceLanguage = sourceLanguage || 'ar';
       this.callbacks = callbacks;
       try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return this.startBrowserSpeech();
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !root.MediaRecorder) return this.startBrowserSpeech();
         this.stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        if (!this.active) return this.stopStream();
+        if (!this.isCurrent(sessionId)) return this.stopStream();
+        this.startVadMonitor();
         const mimeType = MIME_TYPES.find(type => MediaRecorder.isTypeSupported(type)) || '';
         this.createRecorder(mimeType);
         this.callbacks.onStatus?.('listening');
@@ -50,57 +65,115 @@
       }
     }
 
+    isCurrent(sessionId) { return this.active && isCurrentSession(this.sessionId, sessionId); }
+
+    startVadMonitor() {
+      const AudioContext = root.AudioContext || root.webkitAudioContext;
+      if (!AudioContext) throw new Error('Web Audio API is unavailable');
+      this.audioContext = new AudioContext();
+      const source = this.audioContext.createMediaStreamSource(this.stream);
+      this.analyser = this.audioContext.createAnalyser();
+      this.analyser.fftSize = 1024;
+      this.analyser.smoothingTimeConstant = 0.2;
+      source.connect(this.analyser);
+      const samples = new Float32Array(this.analyser.fftSize);
+      this.currentVadStats = createVadStats(Date.now());
+      this.vadTimer = root.setInterval(() => {
+        if (!this.active || !this.analyser || !this.currentVadStats) return;
+        this.analyser.getFloatTimeDomainData(samples);
+        let sumSquares = 0;
+        let peak = 0;
+        for (const sample of samples) {
+          const absolute = Math.abs(sample);
+          sumSquares += sample * sample;
+          if (absolute > peak) peak = absolute;
+        }
+        const rms = Math.sqrt(sumSquares / samples.length);
+        const voiced = rms >= this.vadConfig.rmsThreshold && peak >= this.vadConfig.peakThreshold;
+        this.currentVadStats.totalFrames += 1;
+        if (voiced) this.currentVadStats.voicedFrames += 1;
+        this.currentVadStats.maximumRms = Math.max(this.currentVadStats.maximumRms, rms);
+        this.currentVadStats.maximumPeak = Math.max(this.currentVadStats.maximumPeak, peak);
+      }, this.vadConfig.sampleIntervalMs);
+    }
+
     createRecorder(mimeType) {
       let chunks = [];
+      let chunkStartedAt = Date.now();
       this.recorder = new MediaRecorder(this.stream, mimeType ? { mimeType } : {});
       this.recorder.ondataavailable = event => { if (event.data && event.data.size) chunks.push(event.data); };
       this.recorder.onstop = () => {
+        const endedAt = Date.now();
         const type = this.recorder?.mimeType || mimeType || 'audio/webm';
         const blob = new Blob(chunks, { type });
+        const stats = { ...(this.currentVadStats || createVadStats(chunkStartedAt)), durationMs: endedAt - chunkStartedAt };
+        const vad = decideVad(stats, this.vadConfig);
+        const metadata = {
+          sessionId: this.sessionId,
+          sequenceNumber: this.sequenceNumber++,
+          startedAt: chunkStartedAt,
+          endedAt,
+          timestamp: new Date(endedAt).toISOString(),
+          vad
+        };
         chunks = [];
-        if (blob.size >= this.minimumBytes) this.enqueueTranscription(blob);
+        chunkStartedAt = endedAt;
+        this.currentVadStats = createVadStats(endedAt);
+        if (vad.isSpeech && blob.size > 0) this.enqueueTranscription(blob, metadata);
+        else this.callbacks.onNoSpeech?.(metadata);
       };
       this.recorder.start();
-      this.timer = window.setInterval(() => {
+      this.chunkTimer = root.setInterval(() => {
         if (!this.active || !this.recorder || this.recorder.state !== 'recording') return;
         this.recorder.stop();
-        window.setTimeout(() => {
+        root.setTimeout(() => {
           if (!this.active || !this.recorder || this.recorder.state !== 'inactive') return;
           try { this.recorder.start(); } catch (_) { this.callbacks.onError?.('TRANSCRIPTION_ERROR'); }
         }, 300);
       }, this.chunkDuration);
     }
 
-    enqueueTranscription(blob) {
-      this.processingQueue = this.processingQueue.then(() => this.transcribe(blob)).catch(error => console.error('[audio] queue failed', error));
+    enqueueTranscription(blob, metadata) {
+      this.processingQueue = this.processingQueue
+        .then(() => this.transcribe(blob, metadata))
+        .catch(error => console.error('[audio] queue failed', error));
     }
 
-    async transcribe(blob) {
-      if (!this.active) return;
+    async transcribe(blob, metadata) {
+      if (!this.isCurrent(metadata.sessionId)) return;
+      const abortController = new AbortController();
+      this.abortControllers.add(abortController);
       this.callbacks.onStatus?.('processing');
       try {
         const audio = await blobToBase64(blob);
+        if (!this.isCurrent(metadata.sessionId)) return;
         const response = await fetch('/api/whisper', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: abortController.signal,
           body: JSON.stringify({ audio, srcLang: this.sourceLanguage, mimeType: blob.type || 'audio/webm' })
         });
         const data = await response.json().catch(() => ({}));
+        if (!this.isCurrent(metadata.sessionId)) return;
         if (!response.ok) {
           const code = data.error && data.error.code ? data.error.code : 'TRANSCRIPTION_ERROR';
-          if (code !== 'NO_SPEECH') this.callbacks.onError?.(code);
+          if (code !== 'NO_SPEECH') this.callbacks.onError?.(code, metadata);
           return;
         }
-        if (data.text && data.text.trim()) await this.callbacks.onTranscript?.(data.text.trim());
+        if (data.text && data.text.trim()) await this.callbacks.onTranscript?.(data.text.trim(), metadata);
       } catch (error) {
-        console.error('[audio] request failed', { name: error.name, message: error.message });
-        this.callbacks.onError?.('NETWORK_ERROR');
+        if (error.name !== 'AbortError' && this.isCurrent(metadata.sessionId)) {
+          console.error('[audio] request failed', { name: error.name, message: error.message });
+          this.callbacks.onError?.('NETWORK_ERROR', metadata);
+        }
       } finally {
-        if (this.active) this.callbacks.onStatus?.('listening');
+        this.abortControllers.delete(abortController);
+        if (this.isCurrent(metadata.sessionId)) this.callbacks.onStatus?.('listening');
       }
     }
 
     startBrowserSpeech() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognition = root.SpeechRecognition || root.webkitSpeechRecognition;
       if (!SpeechRecognition) { this.active = false; return this.callbacks.onError?.('TRANSCRIPTION_ERROR'); }
       const recognition = new SpeechRecognition();
       recognition.lang = this.speechLanguages[this.sourceLanguage] || 'ar-SA';
@@ -115,11 +188,24 @@
         if (interim) this.callbacks.onInterim?.(interim);
         if (finalText.trim()) {
           this.pendingTranscript += finalText;
-          window.clearTimeout(this.pendingTimer);
-          this.pendingTimer = window.setTimeout(() => {
+          root.clearTimeout(this.pendingTimer);
+          this.pendingTimer = root.setTimeout(() => {
             const text = this.pendingTranscript.trim();
             this.pendingTranscript = '';
-            if (text) this.callbacks.onTranscript?.(text);
+            const endedAt = Date.now();
+            const metadata = {
+              sessionId: this.sessionId,
+              sequenceNumber: this.sequenceNumber++,
+              startedAt: endedAt,
+              endedAt,
+              timestamp: new Date(endedAt).toISOString(),
+              vad: null
+            };
+            if (text && this.isCurrent(metadata.sessionId)) {
+              this.processingQueue = this.processingQueue
+                .then(() => this.callbacks.onTranscript?.(text, metadata))
+                .catch(error => console.error('[audio] browser transcript queue failed', error));
+            }
           }, 400);
         }
       };
@@ -138,19 +224,38 @@
     }
 
     pause() { this.stop(); }
-    stopStream() { if (this.stream) this.stream.getTracks().forEach(track => track.stop()); this.stream = null; }
+
+    stopStream() {
+      if (this.stream) this.stream.getTracks().forEach(track => track.stop());
+      this.stream = null;
+    }
+
     stop() {
       this.active = false;
-      window.clearInterval(this.timer);
-      window.clearTimeout(this.pendingTimer);
-      this.timer = null;
+      this.abortControllers.forEach(controller => controller.abort());
+      this.abortControllers.clear();
+      root.clearInterval(this.chunkTimer);
+      root.clearInterval(this.vadTimer);
+      root.clearTimeout(this.pendingTimer);
+      this.chunkTimer = null;
+      this.vadTimer = null;
       this.pendingTimer = null;
       if (this.recorder && this.recorder.state !== 'inactive') try { this.recorder.stop(); } catch (_) {}
       this.recorder = null;
-      if (this.speechRecognition) { this.speechRecognition.onend = null; try { this.speechRecognition.stop(); } catch (_) {} }
+      if (this.speechRecognition) {
+        this.speechRecognition.onend = null;
+        try { this.speechRecognition.stop(); } catch (_) {}
+      }
       this.speechRecognition = null;
       this.stopStream();
+      if (this.audioContext) this.audioContext.close().catch(() => {});
+      this.audioContext = null;
+      this.analyser = null;
+      this.currentVadStats = null;
+      this.sessionId = null;
+      this.processingQueue = Promise.resolve();
     }
   }
-  window.KashfAudioController = KashfAudioController;
-})();
+
+  root.KashfAudioController = KashfAudioController;
+})(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -2,13 +2,22 @@
 // VERTALINGEN
 // =====================
 const { UI, SPEECH_LANGS, WHISPER_LANGS } = window.KashfI18n;
+const { filterTranscript, buildTranslationPayload, insertPassageInOrder, isCurrentSession } = window.KashfPipeline;
 
 const preferences={interfaceLanguage:'nl',sourceLanguage:'ar',targetLanguage:'nl'};
-const session={mode:'khutbah',paused:false};
+const session={mode:'khutbah',paused:false,id:null,lastTranscript:'',translationAbortController:null};
 let outLang=preferences.targetLanguage, srcLang=preferences.sourceLanguage, paused=session.paused;
 let processingEl=null, lastTranslation='', allTranslations=[];
 let wakeLock=null, doNotDisturbShown=false, reminderIndex=0, reminderInterval=null;
 const audioController=new window.KashfAudioController({speechLanguages:SPEECH_LANGS});
+
+function generateSessionId(){
+  return (window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():'session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+}
+function abortTranslation(){
+  if(session.translationAbortController)session.translationAbortController.abort();
+  session.translationAbortController=null;
+}
 
 function u(k){return(UI[outLang]||UI.nl)[k]||k;}
 
@@ -169,6 +178,7 @@ function startSession(){
   document.getElementById('live').classList.remove('hidden');
   document.getElementById('trans-feed').innerHTML='';
   addEmptyState();
+  session.id=generateSessionId();session.lastTranscript='';session.paused=false;
   lastTranslation='';allTranslations=[];paused=false;
   history.pushState({page:'live'},'','#live');
   lockOrientation();
@@ -193,6 +203,8 @@ function closeConfirm(){
 function confirmStop(){
   document.getElementById('confirm-modal').style.display='none';
   audioController.stop();
+  abortTranslation();
+  session.id=null;
   releaseWakeLock();
   // Teller verhogen
   sessionCount++;
@@ -210,6 +222,8 @@ function closeThanks(){
 function goBack(){
   paused=false;session.paused=false;
   audioController.stop();
+  abortTranslation();
+  session.id=null;
   releaseWakeLock();
   doNotDisturbShown=false;
   document.getElementById('live').classList.add('hidden');
@@ -226,6 +240,7 @@ function togglePause(){
   if(!paused){
     paused=true;session.paused=true;
     audioController.pause();
+    abortTranslation();
     releaseWakeLock();
     setStatus('paused',u('paused'));
     document.getElementById('pause-btn').textContent=u('resume');
@@ -253,15 +268,21 @@ function showDoNotDisturb(){
 // VERTALEN
 // =====================
 function startAudio(){
-  audioController.start(srcLang,{
+  var activeSessionId=session.id;
+  var sequenceStart=allTranslations.length?allTranslations[allTranslations.length-1].sequenceNumber+1:0;
+  audioController.start({sessionId:activeSessionId,sourceLanguage:srcLang,sequenceStart:sequenceStart},{
     onStatus:function(status){
       if(status==='processing'){setStatus('processing',u('processing'));showProcessing();}
       else{setStatus('listening',u('listening'));hideProcessing();}
     },
     onInterim:function(text){document.getElementById('heard-txt').textContent=text;},
-    onTranscript:async function(text){
+    onTranscript:async function(text,metadata){
+      if(!isCurrentSession(session.id,metadata.sessionId))return;
       document.getElementById('heard-txt').textContent=text;
-      await translate(text);
+      var filtered=filterTranscript(text,session.lastTranscript);
+      if(!filtered.accepted)return;
+      session.lastTranscript=filtered.text;
+      await translatePassage(filtered.text,metadata);
     },
     onError:function(code){
       hideProcessing();
@@ -275,47 +296,66 @@ function startAudio(){
   });
 }
 
-async function translate(text){
+async function translatePassage(text,metadata){
+  if(!isCurrentSession(session.id,metadata.sessionId))return;
   showProcessing();
   setStatus('processing',u('processing'));
+  var controller=new AbortController();
+  session.translationAbortController=controller;
   try{
-    var res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text,lang:outLang,prev:lastTranslation})});
+    var payload=buildTranslationPayload({transcript:text,sourceLanguage:srcLang,targetLanguage:outLang,passages:allTranslations});
+    var res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify(payload)});
     var data=await res.json().catch(function(){return {};});
+    if(!isCurrentSession(session.id,metadata.sessionId))return;
     if(!res.ok){
       var code=data.error&&data.error.code;
       throw new Error(code||'TRANSLATION_ERROR');
     }
     var tx=data.translation&&data.translation.trim();
     hideProcessing();
-    if(tx){lastTranslation=tx;addEntry(tx);}
+    if(tx){
+      lastTranslation=tx;
+      addPassage({
+        sessionId:metadata.sessionId,
+        sequenceNumber:metadata.sequenceNumber,
+        timestamp:metadata.timestamp,
+        originalTranscript:text,
+        translation:tx,
+        sourceLanguage:srcLang,
+        targetLanguage:outLang
+      });
+    }
   }catch(e){
+    if(e.name==='AbortError')return;
     hideProcessing();
     showErr(e.message==='NETWORK_ERROR'?u('connErr'):u('overload'));
   }
+  if(session.translationAbortController===controller)session.translationAbortController=null;
   if(!paused) setStatus('listening',u('listening'));
 }
 
 // =====================
 // FEED
 // =====================
-function addEntry(text){
+function addPassage(passage){
+  if(!isCurrentSession(session.id,passage.sessionId))return;
+  allTranslations=insertPassageInOrder(allTranslations,passage);
+  renderFeed();
+}
+
+function renderFeed(){
   var feed=document.getElementById('trans-feed');
   var empty=document.getElementById('empty-state');
   if(empty) empty.remove();
-  feed.querySelectorAll('.trans-new').forEach(function(el){el.classList.replace('trans-new','trans-old');});
-  var id='e'+Date.now();
-  var entry=document.createElement('div');
-  entry.className='trans-entry trans-new';
-  var now=new Date();
-  var ts=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
-  entry.innerHTML='<p class="trans-text">'+esc(text)+'</p>'
-    +'<div class="trans-ts">'+ts
-    +'<span class="feedback-btns">'
-    +'<button class="fb-btn" onclick="feedback(this,\'up\',\''+id+'\')">&#128077;</button>'
-    +'<button class="fb-btn" onclick="feedback(this,\'down\',\''+id+'\')">&#128078;</button>'
-    +'</span></div>';
-  feed.insertBefore(entry,feed.firstChild);
-  allTranslations.unshift({text:text,ts:ts});
+  feed.querySelectorAll('.trans-entry').forEach(function(entry){entry.remove();});
+  allTranslations.slice().reverse().forEach(function(passage,index){
+    var entry=document.createElement('div');
+    entry.className='trans-entry '+(index===0?'trans-new':'trans-old');
+    var date=new Date(passage.timestamp);
+    var ts=date.getHours()+':'+String(date.getMinutes()).padStart(2,'0');
+    entry.innerHTML='<p class="trans-text">'+esc(passage.translation)+'</p><div class="trans-ts">'+ts+'</div>';
+    feed.appendChild(entry);
+  });
 }
 
 function feedback(btn,type,id){
@@ -376,9 +416,10 @@ function downloadPDF(){
   html+='<div class="strip"><span>'+dateStr.charAt(0).toUpperCase()+dateStr.slice(1)+'</span><span>'+srcLabel+' &rarr; '+langCode+'</span></div>';
   html+='<div class="header"><div class="logo">&#x643;&#x634;&#x641;</div><div class="subtitle">Kashf &middot; Live Vertaling</div></div>';
   html+='<div class="entries">';
-  var reversed=[...entries].reverse();
-  reversed.forEach(function(e){
-    html+='<div class="entry"><p class="trans">'+e.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</p><p class="ts">'+e.ts+'</p></div>';
+  entries.forEach(function(e){
+    var date=new Date(e.timestamp);
+    var ts=date.getHours()+':'+String(date.getMinutes()).padStart(2,'0');
+    html+='<div class="entry"><p class="trans">'+e.translation.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</p><p class="ts">'+ts+'</p></div>';
   });
   html+='</div>';
   html+='<div class="thanks">JazakAllah khayran &mdash; Allahu a\'lam</div>';
