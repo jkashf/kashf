@@ -17,6 +17,44 @@ const TRANSCRIPTION_LANGUAGES = Object.freeze({
   ps: 'ps',
   kk: 'kk'
 });
+export const TRANSCRIPT_FILTER_CONFIG = Object.freeze({
+  maximumNoSpeechProbability: 0.72,
+  minimumAverageLogProbability: -1.0,
+  maximumCompressionRatio: 2.4
+});
+
+function isDevelopment() {
+  return process.env.NODE_ENV !== 'production' && process.env.VERCEL_ENV !== 'production';
+}
+
+function logRejection(reason, details = {}) {
+  if (isDevelopment()) console.info('[whisper] transcript rejected', { reason, ...details });
+}
+
+function numberOrNull(value) {
+  return Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
+export function evaluateSegment(segment, config = TRANSCRIPT_FILTER_CONFIG) {
+  const text = segment && typeof segment.text === 'string' ? segment.text.trim() : '';
+  const noSpeechProbability = numberOrNull(segment && segment.no_speech_prob);
+  const averageLogProbability = numberOrNull(segment && segment.avg_logprob);
+  const compressionRatio = numberOrNull(segment && segment.compression_ratio);
+  if (!text) return { accepted: false, reason: 'empty_segment', text: '' };
+  if (noSpeechProbability !== null && noSpeechProbability >= config.maximumNoSpeechProbability) {
+    return { accepted: false, reason: 'no_speech_metadata', text };
+  }
+  if (averageLogProbability !== null
+    && averageLogProbability <= config.minimumAverageLogProbability
+    && noSpeechProbability !== null
+    && noSpeechProbability >= 0.45) {
+    return { accepted: false, reason: 'low_log_probability', text };
+  }
+  if (compressionRatio !== null && compressionRatio >= config.maximumCompressionRatio) {
+    return { accepted: false, reason: 'high_compression_ratio', text };
+  }
+  return { accepted: true, reason: null, text };
+}
 
 function sendError(res, status, code, message) {
   return res.status(status).json({ error: { code, message } });
@@ -73,7 +111,9 @@ export default async function handler(req, res) {
   const languageField = transcriptionLanguage
     ? `--${boundary}${crlf}Content-Disposition: form-data; name="language"${crlf}${crlf}${transcriptionLanguage}${crlf}`
     : '';
-  const after = Buffer.from(`${crlf}--${boundary}${crlf}Content-Disposition: form-data; name="model"${crlf}${crlf}whisper-1${crlf}${languageField}--${boundary}--${crlf}`);
+  const responseFormatField = `--${boundary}${crlf}Content-Disposition: form-data; name="response_format"${crlf}${crlf}verbose_json${crlf}`;
+  const timestampField = `--${boundary}${crlf}Content-Disposition: form-data; name="timestamp_granularities[]"${crlf}${crlf}segment${crlf}`;
+  const after = Buffer.from(`${crlf}--${boundary}${crlf}Content-Disposition: form-data; name="model"${crlf}${crlf}whisper-1${crlf}${responseFormatField}${timestampField}${languageField}--${boundary}--${crlf}`);
 
   try {
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -97,9 +137,21 @@ export default async function handler(req, res) {
       return sendError(res, 502, 'TRANSCRIPTION_ERROR', 'Transcriptie kon niet worden verwerkt.');
     }
 
-    const text = typeof data.text === 'string' ? data.text.trim() : '';
+    const segments = Array.isArray(data.segments) ? data.segments : [];
+    const acceptedSegments = segments.map(segment => {
+      const result = evaluateSegment(segment);
+      if (!result.accepted) logRejection(result.reason, {
+        noSpeechProbability: numberOrNull(segment.no_speech_prob),
+        averageLogProbability: numberOrNull(segment.avg_logprob),
+        compressionRatio: numberOrNull(segment.compression_ratio)
+      });
+      return result;
+    }).filter(result => result.accepted);
+    const text = segments.length
+      ? acceptedSegments.map(segment => segment.text).join(' ').replace(/\s+/g, ' ').trim()
+      : (typeof data.text === 'string' ? data.text.trim() : '');
     if (!text) return sendError(res, 422, 'NO_SPEECH', 'Geen spraak gedetecteerd.');
-    return res.status(200).json({ text });
+    return res.status(200).json({ text, segmentCount: acceptedSegments.length });
   } catch (error) {
     console.error('[whisper] request failed', { name: error.name, message: error.message });
     return sendError(res, 502, 'NETWORK_ERROR', 'Transcriptieservice is niet bereikbaar.');

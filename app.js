@@ -2,10 +2,10 @@
 // VERTALINGEN
 // =====================
 const { UI, SPEECH_LANGS, WHISPER_LANGS } = window.KashfI18n;
-const { filterTranscript, buildTranslationPayload, insertPassageInOrder, isCurrentSession } = window.KashfPipeline;
+const { filterTranscript, buildTranslationPayload, insertPassageInOrder, isCurrentSession, MERGE_CONFIG, decidePendingTranscript } = window.KashfPipeline;
 
 const preferences={interfaceLanguage:'nl',sourceLanguage:'ar',targetLanguage:'nl'};
-const session={mode:'khutbah',paused:false,id:null,lastTranscript:'',translationAbortController:null};
+const session={mode:'khutbah',paused:false,id:null,lastTranscript:'',translationAbortController:null,pendingTranscript:null,pendingTimer:null};
 let outLang=preferences.targetLanguage, srcLang=preferences.sourceLanguage, paused=session.paused;
 let processingEl=null, lastTranslation='', allTranslations=[];
 let wakeLock=null, doNotDisturbShown=false, reminderIndex=0, reminderInterval=null;
@@ -18,6 +18,9 @@ function abortTranslation(){
   if(session.translationAbortController)session.translationAbortController.abort();
   session.translationAbortController=null;
 }
+function isDevelopmentHost(){return location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.hostname.endsWith('.vercel.app');}
+function logTranscriptRejection(reason){if(isDevelopmentHost())console.info('[Kashf transcript] rejected',{reason:reason});}
+function clearPendingTranscript(){clearTimeout(session.pendingTimer);session.pendingTimer=null;session.pendingTranscript=null;}
 
 function u(k){return(UI[outLang]||UI.nl)[k]||k;}
 
@@ -186,7 +189,7 @@ function startSession(){
   document.getElementById('live').classList.remove('hidden');
   document.getElementById('trans-feed').innerHTML='';
   addEmptyState();
-  session.id=generateSessionId();session.lastTranscript='';session.paused=false;
+  session.id=generateSessionId();session.lastTranscript='';session.paused=false;clearPendingTranscript();
   lastTranslation='';allTranslations=[];paused=false;
   history.pushState({page:'live'},'','#live');
   lockOrientation();
@@ -212,6 +215,7 @@ function confirmStop(){
   document.getElementById('confirm-modal').style.display='none';
   audioController.stop();
   abortTranslation();
+  clearPendingTranscript();
   session.id=null;
   releaseWakeLock();
   // Teller verhogen
@@ -231,6 +235,7 @@ function goBack(){
   paused=false;session.paused=false;
   audioController.stop();
   abortTranslation();
+  clearPendingTranscript();
   session.id=null;
   releaseWakeLock();
   doNotDisturbShown=false;
@@ -249,6 +254,7 @@ function togglePause(){
     paused=true;session.paused=true;
     audioController.pause();
     abortTranslation();
+    flushPendingTranscript();
     releaseWakeLock();
     setStatus('paused',u('paused'));
     document.getElementById('pause-btn').textContent=u('resume');
@@ -288,10 +294,10 @@ function startAudio(){
       if(!isCurrentSession(session.id,metadata.sessionId))return;
       document.getElementById('heard-txt').textContent=text;
       var filtered=filterTranscript(text,session.lastTranscript);
-      if(!filtered.accepted)return;
-      session.lastTranscript=filtered.text;
-      await translatePassage(filtered.text,metadata);
+      if(!filtered.accepted){logTranscriptRejection(filtered.code);return;}
+      await queueTranscriptForTranslation(filtered.text,metadata);
     },
+    onRejected:function(reason){logTranscriptRejection(reason);},
     onError:function(code){
       hideProcessing();
       var messages={
@@ -302,6 +308,28 @@ function startAudio(){
       showErr(messages[code]||u('connErr'));
     }
   });
+}
+
+async function queueTranscriptForTranslation(text,metadata){
+  var pending=session.pendingTranscript;
+  var decision=decidePendingTranscript(pending&&pending.text,text);
+  clearTimeout(session.pendingTimer);
+  if(decision.hold){
+    session.pendingTranscript={text:decision.text,metadata:pending?pending.metadata:metadata};
+    session.pendingTimer=setTimeout(flushPendingTranscript,MERGE_CONFIG.maximumWaitMs);
+    return;
+  }
+  session.pendingTranscript=null;session.pendingTimer=null;
+  session.lastTranscript=decision.text;
+  await translatePassage(decision.text,pending?pending.metadata:metadata);
+}
+
+async function flushPendingTranscript(){
+  var pending=session.pendingTranscript;
+  clearPendingTranscript();
+  if(!pending||!isCurrentSession(session.id,pending.metadata.sessionId))return;
+  session.lastTranscript=pending.text;
+  await translatePassage(pending.text,pending.metadata);
 }
 
 async function translatePassage(text,metadata){

@@ -4,6 +4,8 @@
   root.KashfPipeline = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const VAD_CONFIG = Object.freeze({
+    chunkDurationMs: 8000,
+    startupGracePeriodMs: 1800,
     sampleIntervalMs: 50,
     rmsThreshold: 0.018,
     peakThreshold: 0.055,
@@ -19,6 +21,12 @@
     maximumTranslationCharacters: 1800
   });
 
+  const MERGE_CONFIG = Object.freeze({
+    maximumWaitMs: 9500,
+    maximumPendingCharacters: 280,
+    shortFragmentCharacters: 90
+  });
+
   const HALLUCINATION_PATTERNS = Object.freeze([
     /^thank you for watching[.!]?$/i,
     /^thanks for watching[.!]?$/i,
@@ -27,6 +35,15 @@
     /^amara\.org community$/i,
     /^\[(music|applause|silence|noise)\]$/i,
     /^\((music|applause|silence|noise)\)$/i
+    ,/^اشترك(?:وا)?\s+في\s+القناة[.!؟]?$/u
+    ,/^شكرا(?:ً)?\s+على\s+المشاهدة[.!؟]?$/u
+    ,/^لا\s+تنس(?:وا)?\s+الاشتراك\s+في\s+القناة[.!؟]?$/u
+    ,/^(abonneer|abonneert)\s+(je|u)\s+op\s+(het|ons)\s+kanaal[.!?]?$/i
+  ]);
+
+  const INCOMPLETE_ENDINGS = Object.freeze([
+    /(?:^|\s)(?:zodat|omdat|terwijl|hoewel|wanneer|als|maar|en|of|want|dat|die|waarin|waarmee)$/i,
+    /(?:^|\s)(?:أن|إن|كي|لكي|حتى|لأن|ولكن|و|ف|ثم|الذي|التي|ما)$/u
   ]);
 
   function decideVad(stats, config = VAD_CONFIG) {
@@ -71,6 +88,29 @@
     if (isDuplicateTranscript(text, previousValue)) return { accepted: false, code: 'DUPLICATE_TRANSCRIPT', text };
     if (isKnownHallucination(text)) return { accepted: false, code: 'LIKELY_HALLUCINATION', text };
     return { accepted: true, code: null, text };
+  }
+
+  function hasSentenceEnding(value) {
+    return /[.!?؟؛:]\s*["'»”’)]*$/.test(normalizeTranscript(value));
+  }
+
+  function shouldHoldTranscript(value, config = MERGE_CONFIG) {
+    const text = normalizeTranscript(value);
+    if (!text || hasSentenceEnding(text)) return false;
+    if (INCOMPLETE_ENDINGS.some(pattern => pattern.test(text))) return true;
+    return text.length < config.shortFragmentCharacters;
+  }
+
+  function mergeTranscriptSegments(pending, next, config = MERGE_CONFIG) {
+    const left = normalizeTranscript(pending);
+    const right = normalizeTranscript(next);
+    const merged = normalizeTranscript([left, right].filter(Boolean).join(' '));
+    return merged.slice(0, config.maximumPendingCharacters);
+  }
+
+  function decidePendingTranscript(pending, next, config = MERGE_CONFIG) {
+    const merged = mergeTranscriptSegments(pending, next, config);
+    return { text: merged, hold: shouldHoldTranscript(merged, config) };
   }
 
   function takeRecentWithinLimit(values, maximumCharacters) {
@@ -118,6 +158,7 @@
   return Object.freeze({
     VAD_CONFIG,
     CONTEXT_CONFIG,
+    MERGE_CONFIG,
     HALLUCINATION_PATTERNS,
     decideVad,
     normalizeTranscript,
@@ -125,6 +166,10 @@
     isDuplicateTranscript,
     isKnownHallucination,
     filterTranscript,
+    hasSentenceEnding,
+    shouldHoldTranscript,
+    mergeTranscriptSegments,
+    decidePendingTranscript,
     buildContext,
     buildTranslationPayload,
     insertPassageInOrder,

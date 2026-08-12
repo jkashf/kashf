@@ -1,7 +1,8 @@
 const assert = require('node:assert/strict');
 const {
   VAD_CONFIG, decideVad, filterTranscript, buildContext,
-  buildTranslationPayload, insertPassageInOrder, isCurrentSession
+  buildTranslationPayload, insertPassageInOrder, isCurrentSession,
+  MERGE_CONFIG, decidePendingTranscript, shouldHoldTranscript
 } = require('../pipeline.js');
 
 const silence = decideVad({ durationMs: 8000, totalFrames: 160, voicedFrames: 0, maximumRms: 0.003, maximumPeak: 0.01 });
@@ -21,7 +22,17 @@ assert.equal(VAD_CONFIG.minimumVoicedDurationMs, 300);
 assert.equal(filterTranscript('   ', '').code, 'NO_SPEECH');
 assert.equal(filterTranscript('Alhamdulillah.', ' alhamdulillah ').code, 'DUPLICATE_TRANSCRIPT');
 assert.equal(filterTranscript('Thank you for watching.', '').code, 'LIKELY_HALLUCINATION');
+assert.equal(filterTranscript('اشتركوا في القناة', '').code, 'LIKELY_HALLUCINATION');
+assert.equal(filterTranscript('قال لهم اشتركوا في القناة التعليمية لتصلكم الدروس', '').accepted, true, 'real longer sentence containing the words must not be blindly rejected');
 assert.equal(filterTranscript('De spreker gaat verder.', '').accepted, true);
+
+const firstHalf = decidePendingTranscript('', 'إن المؤمن إذا أخطأ');
+assert.equal(firstHalf.hold, true, 'short unfinished chunk must wait');
+const completedThought = decidePendingTranscript(firstHalf.text, 'عاد إلى الله بالتوبة.');
+assert.equal(completedThought.hold, false);
+assert.equal(completedThought.text, 'إن المؤمن إذا أخطأ عاد إلى الله بالتوبة.');
+assert.equal(shouldHoldTranscript('هذه جملة كاملة.'), false, 'complete sentence must not be delayed');
+assert.equal(MERGE_CONFIG.maximumWaitMs, 9500);
 
 let ordered = [];
 ordered = insertPassageInOrder(ordered, { sequenceNumber: 2 });

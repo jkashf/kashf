@@ -16,7 +16,7 @@
   }
 
   class KashfAudioController {
-    constructor({ speechLanguages, chunkDuration = 8000, vadConfig = VAD_CONFIG } = {}) {
+    constructor({ speechLanguages, chunkDuration = VAD_CONFIG.chunkDurationMs, vadConfig = VAD_CONFIG } = {}) {
       this.speechLanguages = speechLanguages || {};
       this.chunkDuration = chunkDuration;
       this.vadConfig = { ...VAD_CONFIG, ...vadConfig };
@@ -37,6 +37,7 @@
       this.callbacks = {};
       this.sourceLanguage = 'ar';
       this.currentVadStats = null;
+      this.acceptVadAfter = 0;
     }
 
     get isActive() { return this.active; }
@@ -52,6 +53,7 @@
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !root.MediaRecorder) return this.startBrowserSpeech();
         this.stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         if (!this.isCurrent(sessionId)) return this.stopStream();
+        this.acceptVadAfter = Date.now() + this.vadConfig.startupGracePeriodMs;
         this.startVadMonitor();
         const mimeType = MIME_TYPES.find(type => MediaRecorder.isTypeSupported(type)) || '';
         this.createRecorder(mimeType);
@@ -80,6 +82,7 @@
       this.currentVadStats = createVadStats(Date.now());
       this.vadTimer = root.setInterval(() => {
         if (!this.active || !this.analyser || !this.currentVadStats) return;
+        if (Date.now() < this.acceptVadAfter) return;
         this.analyser.getFloatTimeDomainData(samples);
         let sumSquares = 0;
         let peak = 0;
@@ -120,7 +123,7 @@
         chunkStartedAt = endedAt;
         this.currentVadStats = createVadStats(endedAt);
         if (vad.isSpeech && blob.size > 0) this.enqueueTranscription(blob, metadata);
-        else this.callbacks.onNoSpeech?.(metadata);
+        else this.callbacks.onRejected?.('VAD', metadata);
       };
       this.recorder.start();
       this.chunkTimer = root.setInterval(() => {
@@ -157,7 +160,8 @@
         if (!this.isCurrent(metadata.sessionId)) return;
         if (!response.ok) {
           const code = data.error && data.error.code ? data.error.code : 'TRANSCRIPTION_ERROR';
-          if (code !== 'NO_SPEECH') this.callbacks.onError?.(code, metadata);
+          if (code === 'NO_SPEECH') this.callbacks.onRejected?.('NO_SPEECH_METADATA', metadata);
+          else this.callbacks.onError?.(code, metadata);
           return;
         }
         if (data.text && data.text.trim()) await this.callbacks.onTranscript?.(data.text.trim(), metadata);
@@ -252,6 +256,7 @@
       this.audioContext = null;
       this.analyser = null;
       this.currentVadStats = null;
+      this.acceptVadAfter = 0;
       this.sessionId = null;
       this.processingQueue = Promise.resolve();
     }
