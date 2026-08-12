@@ -4,6 +4,7 @@
 const { UI, SPEECH_LANGS, WHISPER_LANGS } = window.KashfI18n;
 const { filterTranscript, buildTranslationPayload, insertPassageInOrder, isCurrentSession, MERGE_CONFIG, decidePendingTranscript } = window.KashfPipeline;
 const { KhutbahBuffer, evaluateShortTranscript } = window.KashfKhutbahBuffer;
+const { ReadingPacer } = window.KashfReadingPacer;
 
 const preferences={interfaceLanguage:'nl',sourceLanguage:'ar',targetLanguage:'nl'};
 const session={mode:'khutbah',paused:false,ended:false,id:null,lastTranscript:'',translationAbortController:null,pendingTranscript:null,pendingTimer:null};
@@ -12,6 +13,7 @@ let processingEl=null, lastTranslation='', allTranslations=[];
 let wakeLock=null, doNotDisturbShown=false, reminderIndex=0, reminderInterval=null;
 const audioController=new window.KashfAudioController({speechLanguages:SPEECH_LANGS});
 let khutbahBuffer=null;
+let readingPacer=null;
 
 function generateSessionId(){
   return (window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():'session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
@@ -26,6 +28,12 @@ function clearPendingTranscript(){clearTimeout(session.pendingTimer);session.pen
 function isKhutbahMode(){return session.mode==='khutbah';}
 function createKhutbahBuffer(){
   return new KhutbahBuffer({onFlush:translateKhutbahUnit});
+}
+function createReadingPacer(){
+  return new ReadingPacer({
+    onShow:renderCurrentReadingPassage,
+    onState:logReadingState
+  });
 }
 
 function u(k){return(UI[outLang]||UI.nl)[k]||k;}
@@ -197,6 +205,7 @@ function startSession(){
   addEmptyState();
   session.id=generateSessionId();session.lastTranscript='';session.paused=false;session.ended=false;clearPendingTranscript();
   khutbahBuffer=isKhutbahMode()?createKhutbahBuffer():null;
+  readingPacer=isKhutbahMode()?createReadingPacer():null;
   lastTranslation='';allTranslations=[];paused=false;
   history.pushState({page:'live'},'','#live');
   lockOrientation();
@@ -224,10 +233,12 @@ async function confirmStop(){
   document.getElementById('confirm-modal').style.display='none';
   audioController.stop();
   if(khutbahBuffer)await khutbahBuffer.flush('STOP_FLUSH');
+  if(readingPacer)readingPacer.stop();
   clearPendingTranscript();
   session.ended=true;
   releaseWakeLock();
   setKhutbahScrollLock(false);
+  renderFeed();
   // Teller verhogen
   sessionCount++;
   localStorage.setItem('kashf_sessions',sessionCount);
@@ -248,6 +259,8 @@ function goBack(){
   clearPendingTranscript();
   if(khutbahBuffer)khutbahBuffer.stop();
   khutbahBuffer=null;
+  if(readingPacer)readingPacer.stop();
+  readingPacer=null;
   session.id=null;
   releaseWakeLock();
   setKhutbahScrollLock(false);
@@ -289,6 +302,7 @@ async function togglePause(){
     audioController.pause();
     flushPendingTranscript();
     if(khutbahBuffer)await khutbahBuffer.pause();
+    if(readingPacer)readingPacer.pause();
     releaseWakeLock();
     setStatus('paused',u('paused'));
     document.getElementById('pause-btn').textContent=u('resume');
@@ -296,6 +310,7 @@ async function togglePause(){
     paused=false;session.paused=false;
     document.getElementById('pause-btn').textContent=u('pause');
     requestWakeLock();
+    if(readingPacer)readingPacer.resume();
     startAudio();
   }
 }
@@ -461,7 +476,34 @@ function logTranslationUnit(passage){
 function addPassage(passage){
   if(!isCurrentSession(session.id,passage.sessionId))return;
   allTranslations=insertPassageInOrder(allTranslations,passage);
-  renderFeed();
+  if(isKhutbahMode()&&!session.ended&&readingPacer)readingPacer.enqueueUnit(passage);
+  else renderFeed();
+}
+
+function renderCurrentReadingPassage(readingPassage){
+  if(!isKhutbahMode()||session.ended)return;
+  var feed=document.getElementById('trans-feed');
+  feed.innerHTML='';
+  var entry=document.createElement('div');
+  entry.className='trans-entry trans-new reading-current';
+  entry.dataset.readingPassageId=readingPassage.id;
+  var date=new Date(readingPassage.timestamp);
+  var ts=date.getHours()+':'+String(date.getMinutes()).padStart(2,'0');
+  entry.innerHTML='<p class="trans-text">'+esc(readingPassage.translation)+'</p><div class="trans-ts">'+ts+'</div>';
+  feed.appendChild(entry);
+  feed.scrollTop=0;
+}
+
+function logReadingState(state){
+  if(!isDevelopmentHost())return;
+  console.info('[Kashf reading pacer]',{
+    queueLength:state.queueLength,
+    translationLagMs:state.translationLagMs,
+    readingLagMs:state.readingLagMs,
+    totalUserLagMs:state.totalUserLagMs,
+    currentPassageId:state.current&&state.current.id,
+    paused:state.paused
+  });
 }
 
 function renderFeed(){

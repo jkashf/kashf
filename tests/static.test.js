@@ -14,7 +14,7 @@ const handlers = [...html.matchAll(/onclick="([A-Za-z_$][\w$]*)\(/g)].map(match 
 const missingHandlers = [...new Set(handlers)].filter(name => !new RegExp(`function\\s+${name}\\s*\\(`).test(app));
 assert.deepEqual(missingHandlers, [], `missing handlers: ${missingHandlers.join(', ')}`);
 
-const expectedOrder = ['translations.js', 'pipeline.js', 'khutbah-buffer.js', 'audio.js', 'boot.js', 'app.js'];
+const expectedOrder = ['translations.js', 'pipeline.js', 'khutbah-buffer.js', 'reading-pacer.js', 'audio.js', 'boot.js', 'app.js'];
 const positions = expectedOrder.map(file => html.indexOf(`src="${file}"`));
 assert.ok(positions.every(position => position >= 0));
 assert.deepEqual([...positions].sort((a, b) => a - b), positions, 'scripts must load in dependency order');
@@ -26,6 +26,11 @@ assert.match(app, /session\.ended=true[\s\S]*setKhutbahScrollLock\(false\)/, 'st
 assert.match(app, /if\(!session\.ended\)goBack\(\)/, 'closing the thanks modal must retain completed history for review');
 assert.match(app, /download-btn'\)\.style\.display=enabled\?'none'/, 'active Khutbah must hide the read/export invitation');
 assert.match(styles, /khutbah-scroll-locked\{[^}]*overflow-y:hidden/, 'active Khutbah scrolling must be blocked');
-assert.match(html, /Terugscrollen is tijdens de actieve khutbah bewust niet beschikbaar/);
+assert.match(html, /Kashf vertaalt bewust op leestempo/);
+assert.match(app, /readingPacer\.enqueueUnit\(passage\)/, 'translated units must enter the reading queue before display');
+assert.match(app, /feed\.innerHTML='';[\s\S]*reading-current/, 'current reading passage must own a stable viewport');
+assert.match(app, /readingPacer\.pause\(\)/);
+assert.match(app, /readingPacer\.resume\(\)/);
+assert.match(app, /readingPacer\.stop\(\)[\s\S]*renderFeed\(\)/, 'stop must expose normal full history');
 
 console.log('static integration tests passed');

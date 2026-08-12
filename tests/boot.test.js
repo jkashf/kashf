@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 
-const classicScripts = ['translations.js', 'pipeline.js', 'khutbah-buffer.js', 'audio.js', 'boot.js', 'app.js'];
+const classicScripts = ['translations.js', 'pipeline.js', 'khutbah-buffer.js', 'reading-pacer.js', 'audio.js', 'boot.js', 'app.js'];
 const combinedSource = classicScripts.map(file => fs.readFileSync(file, 'utf8')).join('\n');
 assert.doesNotThrow(() => new vm.Script(combinedSource), 'classic scripts must not have global lexical collisions');
 
@@ -16,6 +16,7 @@ const context = {
   KashfI18n: { UI: {}, SPEECH_LANGS: {}, WHISPER_LANGS: {} },
   KashfPipeline: { filterTranscript() {} },
   KashfKhutbahBuffer: { KhutbahBuffer: function KhutbahBuffer() {} },
+  KashfReadingPacer: { ReadingPacer: function ReadingPacer() {} },
   KashfAudioController: function KashfAudioController() {}
 };
 context.window = context;
