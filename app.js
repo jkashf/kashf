@@ -14,6 +14,7 @@ let wakeLock=null, doNotDisturbShown=false, reminderIndex=0, reminderInterval=nu
 const audioController=new window.KashfAudioController({speechLanguages:SPEECH_LANGS});
 let khutbahBuffer=null;
 let readingPacer=null;
+let readingRenderToken=0;
 
 function generateSessionId(){
   return (window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():'session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
@@ -27,6 +28,13 @@ function logLifecycle(event,metadata){window.KashfLifecycle.log(event,metadata);
 function logTranscriptRejection(reason){if(isDevelopmentHost())console.info('[Kashf transcript] rejected',{reason:reason});}
 function clearPendingTranscript(){clearTimeout(session.pendingTimer);session.pendingTimer=null;session.pendingTranscript=null;}
 function isKhutbahMode(){return session.mode==='khutbah';}
+function selectMode(mode,button){
+  session.mode=mode==='lecture'?'lecture':'khutbah';
+  document.querySelectorAll('.mode-option').forEach(function(option){
+    option.classList.toggle('active',option===button);
+    option.setAttribute('aria-pressed',option===button?'true':'false');
+  });
+}
 function createKhutbahBuffer(){
   return new KhutbahBuffer({onFlush:translateKhutbahUnit,onLifecycle:logLifecycle});
 }
@@ -201,6 +209,9 @@ function lockOrientation(){
 // SESSIE
 // =====================
 function startSession(){
+  document.querySelector('.app').classList.add('session-active');
+  document.querySelector('.app').classList.remove('session-ended');
+  document.querySelector('meta[name="theme-color"]').setAttribute('content','#123F35');
   document.getElementById('home').classList.add('hidden');
   document.getElementById('live').classList.remove('hidden');
   document.getElementById('trans-feed').innerHTML='';
@@ -238,6 +249,9 @@ async function confirmStop(){
   if(readingPacer)readingPacer.stop();
   clearPendingTranscript();
   session.ended=true;
+  document.querySelector('.app').classList.remove('session-active');
+  document.querySelector('.app').classList.add('session-ended');
+  document.querySelector('meta[name="theme-color"]').setAttribute('content','#F8F5EE');
   releaseWakeLock();
   setKhutbahScrollLock(false);
   renderFeed();
@@ -267,6 +281,8 @@ function goBack(){
   releaseWakeLock();
   setKhutbahScrollLock(false);
   doNotDisturbShown=false;
+  document.querySelector('.app').classList.remove('session-active','session-ended');
+  document.querySelector('meta[name="theme-color"]').setAttribute('content','#F8F5EE');
   document.getElementById('live').classList.add('hidden');
   document.getElementById('home').classList.remove('hidden');
   history.replaceState({page:'home'},'','');
@@ -487,15 +503,20 @@ function addPassage(passage){
 function renderCurrentReadingPassage(readingPassage){
   if(!isKhutbahMode()||session.ended)return;
   var feed=document.getElementById('trans-feed');
-  feed.innerHTML='';
-  var entry=document.createElement('div');
-  entry.className='trans-entry trans-new reading-current';
-  entry.dataset.readingPassageId=readingPassage.id;
-  var date=new Date(readingPassage.timestamp);
-  var ts=date.getHours()+':'+String(date.getMinutes()).padStart(2,'0');
-  entry.innerHTML='<p class="trans-text">'+esc(readingPassage.translation)+'</p><div class="trans-ts">'+ts+'</div>';
-  feed.appendChild(entry);
-  feed.scrollTop=0;
+  var token=++readingRenderToken;
+  var previous=feed.querySelector('.reading-current');
+  if(previous)previous.classList.add('reading-leaving');
+  setTimeout(function(){
+    if(token!==readingRenderToken)return;
+    feed.innerHTML='';
+    var entry=document.createElement('div');
+    entry.className='trans-entry trans-new reading-current reading-entering';
+    entry.dataset.readingPassageId=readingPassage.id;
+    entry.innerHTML='<p class="trans-text">'+esc(readingPassage.translation)+'</p><div class="reader-divider" aria-hidden="true"><span></span><img src="assets/sakura-divider-transparent.png" alt=""><span></span></div>';
+    feed.appendChild(entry);
+    feed.scrollTop=0;
+    requestAnimationFrame(function(){entry.classList.remove('reading-entering');});
+  },previous?850:0);
 }
 
 function logReadingState(state){
@@ -605,6 +626,7 @@ function downloadPDF(){
   setTimeout(function(){t.style.display='none';t.style.background='';t.style.color='';t.style.borderColor='';},4000);
 }
 function showStartTip(){
+  if(!isKhutbahMode()){startSession();return;}
   var m=document.getElementById('start-tip-modal');
   m.style.display='flex';
   m.style.pointerEvents='auto';

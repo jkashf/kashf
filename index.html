@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#F8F5EE">
 <title>Kashf</title>
 <script>
 window.__kashfSplashFailsafe=setTimeout(function(){
@@ -15,7 +15,7 @@ window.__kashfSplashFailsafe=setTimeout(function(){
 },6000);
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=polish-2">
 </head>
 <body>
 
@@ -80,6 +80,18 @@ window.__kashfSplashFailsafe=setTimeout(function(){
         <span id="tip-txt">Voeg Kashf toe aan je beginscherm voor snelle toegang</span>
         <button onclick="dismissTip()">&#10005;</button>
       </div>
+      <div class="mode-select" aria-label="Kies een sessietype">
+        <button class="mode-option active" type="button" data-mode="khutbah" onclick="selectMode('khutbah',this)">
+          <span class="mode-kicker">Vrijdagpreek</span>
+          <strong>Khutbah</strong>
+          <span>Afleidingsvrij en automatisch op leestempo.</span>
+        </button>
+        <button class="mode-option" type="button" data-mode="lecture" onclick="selectMode('lecture',this)">
+          <span class="mode-kicker">Lessen &amp; lezingen</span>
+          <strong>Lezing / Les</strong>
+          <span>Meer vrijheid om tijdens de sessie terug te lezen.</span>
+        </button>
+      </div>
       <p class="src-label" id="src-lbl">Taal van de lezing</p>
       <div class="src-row">
         <button class="sbtn-ar active" onclick="selectArabic(this)" id="btn-ar">&#127480;&#127462; Arabisch</button>
@@ -114,7 +126,6 @@ window.__kashfSplashFailsafe=setTimeout(function(){
       <div class="live-status">
         <div class="ldot listening" id="ldot"></div>
         <span class="status-txt" id="status-txt">Luistert&hellip;</span>
-        <span class="whisper-badge">Whisper AI</span>
       </div>
       <div class="live-actions">
         <button class="action-btn pause-btn" id="pause-btn" onclick="togglePause()">Pauzeer</button>
@@ -168,7 +179,18 @@ window.__kashfSplashFailsafe=setTimeout(function(){
 <script src="reading-pacer.js" defer></script>
 <script src="audio.js" defer></script>
 <script src="boot.js" defer></script>
-<script src="app.js" defer></script>
-<div id="start-tip-modal" style="display:none;pointer-events:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;align-items:center;justify-content:center;padding:24px"><div style="background:#FDFCFA;border-radius:20px;padding:32px 28px;max-width:340px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15)"><div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:#B8964A;margin-bottom:16px">&#x643;&#x634;&#x641;</div><p style="font-family:'Playfair Display',serif;font-size:1rem;color:#2A2018;line-height:1.6;margin-bottom:12px">Kashf vertaalt bewust op leestempo.</p><p style="font-size:0.78rem;color:#8F7A55;line-height:1.7;margin-bottom:14px">Soms loopt de vertaling iets achter, zodat je rustig en volledig kunt meelezen. Gaat een passage voorbij? Probeer niet terug te scrollen. Tijdens de khutbah blijft Kashf automatisch bij de actuele vertaling.</p><p style="font-size:0.75rem;color:#A18D68;line-height:1.65;margin-bottom:18px">Na afloop kun je alles volledig teruglezen en bewaren als PDF. Zet je telefoon op Niet storen, leg hem neer en laat Kashf voor je meelopen.</p><button onclick="closeStartTip()" style="width:100%;background:#0A0A0A;color:#fff;border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent">Begrepen, start</button></div></div>
+<script src="app.js?v=polish-4" defer></script>
+<div id="start-tip-modal" class="start-tip-modal">
+  <div class="start-tip-box">
+    <div class="start-tip-logo">&#x643;&#x634;&#x641;</div>
+    <p class="start-tip-title">Luister met aandacht.</p>
+    <div class="start-tip-guidance">
+      <p>Zet je telefoon op <strong>Niet storen</strong> en leg hem rustig neer.</p>
+      <p>Kashf loopt bewust iets achter, zodat je volledige passages op leestempo ontvangt.</p>
+      <p>Tijdens de khutbah kun je niet terugscrollen. Na afloop is alles terug te lezen en als PDF te bewaren.</p>
+    </div>
+    <button onclick="closeStartTip()">Begrepen, start</button>
+  </div>
+</div>
 </body>
 </html>
