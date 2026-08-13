@@ -75,18 +75,6 @@ window.__kashfSplashFailsafe=setTimeout(function(){
       </div>
     </div>
     <div class="start-section">
-      <div class="mode-select" aria-label="Kies een sessietype">
-        <button class="mode-option active" type="button" data-mode="khutbah" onclick="selectMode('khutbah',this)">
-          <span class="mode-kicker">Vrijdagpreek</span>
-          <strong>Khutbah</strong>
-          <span>Afleidingsvrij en automatisch op leestempo.</span>
-        </button>
-        <button class="mode-option" type="button" data-mode="lecture" onclick="selectMode('lecture',this)">
-          <span class="mode-kicker">Lessen &amp; lezingen</span>
-          <strong>Lezing / Les</strong>
-          <span>Meer vrijheid om tijdens de sessie terug te lezen.</span>
-        </button>
-      </div>
       <p class="src-label" id="src-lbl">Taal van de lezing</p>
       <div class="src-row">
         <button class="sbtn-ar active" onclick="selectArabic(this)" id="btn-ar">&#127480;&#127462; Arabisch</button>
@@ -110,7 +98,17 @@ window.__kashfSplashFailsafe=setTimeout(function(){
           </div>
         </div>
       </div>
-      <button class="start-btn" id="start-btn" onclick="showStartTip()">Begrijp mee &rarr;</button>
+      <div class="mode-actions" aria-label="Kies een sessietype">
+        <button class="mode-primary" type="button" data-mode="khutbah" onclick="selectAndStartMode('khutbah',this)">
+          <span class="mode-kicker">Vrijdagpreek</span>
+          <strong>Start Khutbah</strong>
+          <span>Voor de vrijdagpreek &middot; afleidingsvrij &middot; automatisch op leestempo</span>
+        </button>
+        <button class="mode-secondary" type="button" data-mode="lecture" onclick="selectAndStartMode('lecture',this)">
+          <strong>Lezing / Les</strong>
+          <span>Voor andere islamitische lessen en lezingen</span>
+        </button>
+      </div>
       <p class="disclaimer" id="disclaimer-txt">Allahu a'lam &mdash; Kashf is een hulpmiddel. Vertalingen zijn AI-gegenereerd en kunnen onnauwkeurigheden bevatten. Raadpleeg altijd een geleerde voor religi&euml;uze kwesties.</p>
     </div>
   </div>
@@ -125,7 +123,7 @@ window.__kashfSplashFailsafe=setTimeout(function(){
       <div class="live-actions">
         <button class="action-btn pause-btn" id="pause-btn" onclick="togglePause()">Pauzeer</button>
         <button class="action-btn download-btn" id="download-btn" onclick="downloadPDF()">&#8595; PDF</button>
-        <button class="action-btn back-btn-live" onclick="askConfirmStop()" style="color:var(--red);border-color:rgba(192,57,43,0.3);background:rgba(192,57,43,0.05)">Stop sessie</button>
+        <button class="action-btn back-btn-live" id="stop-session-btn" onclick="askConfirmStop()" style="color:var(--red);border-color:rgba(192,57,43,0.3);background:rgba(192,57,43,0.05)">Stop sessie</button>
       </div>
     </div>
     <div class="trans-feed" id="trans-feed">

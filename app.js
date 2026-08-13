@@ -28,13 +28,27 @@ function logLifecycle(event,metadata){window.KashfLifecycle.log(event,metadata);
 function logTranscriptRejection(reason){if(isDevelopmentHost())console.info('[Kashf transcript] rejected',{reason:reason});}
 function clearPendingTranscript(){clearTimeout(session.pendingTimer);session.pendingTimer=null;session.pendingTranscript=null;}
 function isKhutbahMode(){return session.mode==='khutbah';}
+const UNSAFE_TRANSLATION_PATTERNS=[
+  /\bi (?:cannot|can't|am unable to) (?:provide )?(?:a )?(?:reliable )?translat(?:e|ion)\b/i,
+  /\b(?:the|this|new) passage (?:appears|seems) to be\b/i,
+  /\bpossible transcription error\b/i,
+  /\bplease (?:verify|check) (?:the )?(?:audio|transcript|source|input)\b/i,
+  /\b(?:as an ai|i notice that|linguistic analysis|source input)\b/i
+];
+function isValidTranslationText(value){
+  if(typeof value!=='string')return false;
+  var text=value.replace(/\s+/g,' ').trim();
+  return !!text&&text!=='NO_TRANSLATION'&&!UNSAFE_TRANSLATION_PATTERNS.some(function(pattern){return pattern.test(text);});
+}
+function validSessionTranslations(){return allTranslations.filter(function(passage){return passage&&isValidTranslationText(passage.translation);});}
 function selectMode(mode,button){
   session.mode=mode==='lecture'?'lecture':'khutbah';
-  document.querySelectorAll('.mode-option').forEach(function(option){
+  document.querySelectorAll('[data-mode]').forEach(function(option){
     option.classList.toggle('active',option===button);
     option.setAttribute('aria-pressed',option===button?'true':'false');
   });
 }
+function selectAndStartMode(mode,button){selectMode(mode,button);showStartTip();}
 function createKhutbahBuffer(){
   return new KhutbahBuffer({onFlush:translateKhutbahUnit,onLifecycle:logLifecycle});
 }
@@ -129,7 +143,6 @@ function updateUI(){
   document.getElementById('h-title').textContent=u('title');
   document.getElementById('h-sub').textContent=u('sub');
   document.getElementById('src-lbl').textContent=u('srcLbl');
-  document.getElementById('start-btn').textContent=u('startBtn');
   document.getElementById('btn-other').innerHTML=u('otherLang')+' &#9662;';
   document.getElementById('pause-btn').textContent=paused?u('resume'):u('pause');
   document.getElementById('heard-txt').textContent=u('heard');
@@ -414,7 +427,7 @@ async function translatePassage(text,metadata){
   logLifecycle('TRANSLATION_START',{sessionId:metadata.sessionId,sequenceNumber:metadata.sequenceNumber,timestamp:translationStartedAt,flushReason:metadata.flushReason||'DIRECT_MODE'});
   session.translationAbortController=controller;
   try{
-    var payload=buildTranslationPayload({transcript:text,sourceLanguage:srcLang,targetLanguage:outLang,passages:allTranslations});
+    var payload=buildTranslationPayload({transcript:text,sourceLanguage:srcLang,targetLanguage:outLang,passages:validSessionTranslations()});
     var res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify(payload)});
     var data=await res.json().catch(function(){return {};});
     if(!isCurrentSession(session.id,metadata.sessionId))return;
@@ -426,7 +439,7 @@ async function translatePassage(text,metadata){
     var translationCompletedAt=Date.now();
     logLifecycle('TRANSLATION_DONE',{sessionId:metadata.sessionId,sequenceNumber:metadata.sequenceNumber,timestamp:translationCompletedAt,translationLagMs:translationCompletedAt-(metadata.startedAt||translationStartedAt),flushReason:metadata.flushReason||'DIRECT_MODE'});
     hideProcessing();
-    if(tx){
+    if(isValidTranslationText(tx)){
       lastTranslation=tx;
       addPassage({
         sessionId:metadata.sessionId,
@@ -479,7 +492,7 @@ function logTranslationUnit(passage){
 // FEED
 // =====================
 function addPassage(passage){
-  if(!isCurrentSession(session.id,passage.sessionId))return;
+  if(!isCurrentSession(session.id,passage.sessionId)||!isValidTranslationText(passage.translation))return;
   allTranslations=insertPassageInOrder(allTranslations,passage);
   if(isKhutbahMode()&&!session.ended&&readingPacer)readingPacer.enqueueUnit(passage);
   else renderFeed();
@@ -521,7 +534,9 @@ function renderFeed(){
   var empty=document.getElementById('empty-state');
   if(empty) empty.remove();
   feed.querySelectorAll('.trans-entry').forEach(function(entry){entry.remove();});
-  allTranslations.forEach(function(passage,index){
+  var validTranslations=validSessionTranslations();
+  allTranslations=validTranslations;
+  validTranslations.forEach(function(passage,index){
     var entry=document.createElement('div');
     entry.className='trans-entry '+(index===allTranslations.length-1?'trans-new':'trans-old');
     var date=new Date(passage.timestamp);
@@ -561,7 +576,7 @@ function showErr(msg){
 // PDF DOWNLOAD
 // =====================
 function downloadPDF(){
-  var entries=allTranslations;
+  var entries=validSessionTranslations();
   if(entries.length===0){showErr('Nog geen vertalingen.');return;}
   var now=new Date();
   var locale={nl:'nl-NL',en:'en-GB',fr:'fr-FR',de:'de-DE',es:'es-ES',ar_out:'ar-SA'}[outLang]||'nl-NL';

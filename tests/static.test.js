@@ -32,5 +32,19 @@ assert.match(app, /feed\.innerHTML='';[\s\S]*reading-current/, 'current reading 
 assert.match(app, /readingPacer\.pause\(\)/);
 assert.match(app, /readingPacer\.resume\(\)/);
 assert.match(app, /readingPacer\.stop\(\)[\s\S]*renderFeed\(\)/, 'stop must expose normal full history');
+assert.match(html, /id="pause-btn"[^>]*onclick="togglePause\(\)"/, 'pause handler must remain directly reachable');
+assert.match(html, /id="stop-session-btn"[^>]*onclick="askConfirmStop\(\)"/, 'stop handler must remain directly reachable');
+assert.match(app, /document\.getElementById\('pause-btn'\)\.textContent=u\('resume'\)/, 'pause must expose resume in one state transition');
+assert.match(styles, /session-active \.live\{[^}]*z-index:32/, 'live controls must sit above the decorative navigation layer');
+assert.match(styles, /session-active nav\{[^}]*pointer-events:none/, 'transparent active navigation must never intercept touches');
+assert.match(styles, /session-active \.action-btn\{[^}]*min-height:44px[^}]*touch-action:manipulation[^}]*pointer-events:auto/s, 'active controls need WebKit-safe mobile hit targets');
+assert.match(html, /class="mode-primary"[\s\S]*<strong>Start Khutbah<\/strong>/, 'Khutbah must be the primary home action');
+assert.match(html, /class="mode-secondary"[\s\S]*<strong>Lezing \/ Les<\/strong>/, 'lecture must be the secondary home action');
+assert.match(styles, /\.mode-actions\{display:grid/, 'mobile mode actions must stack vertically');
+assert.match(app, /function isValidTranslationText[\s\S]*UNSAFE_TRANSLATION_PATTERNS/, 'client must reject unsafe translation output');
+assert.match(app, /if\(!isCurrentSession\(session\.id,passage\.sessionId\)\|\|!isValidTranslationText\(passage\.translation\)\)return/, 'rejected output must not enter allTranslations or Reading Pacer');
+assert.match(app, /function downloadPDF\(\)\{\s*var entries=validSessionTranslations\(\)/, 'PDF must use the same validated session data');
+assert.match(app, /renderFeed\(\)[\s\S]*validSessionTranslations\(\)/, 'completed history must render only validated session data');
+assert.match(app, /setKhutbahScrollLock\(false\)[\s\S]*renderFeed\(\)/, 'stop must unlock and show validated complete history');
 
 console.log('static integration tests passed');

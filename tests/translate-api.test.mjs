@@ -70,4 +70,23 @@ const longArabicPassage = 'ا'.repeat(600);
 const longMessage = translate.buildUserMessage({ text: longArabicPassage, sourceLanguage: 'ar', targetLanguage: 'nl', context: {} });
 assert.ok(longMessage.endsWith(longArabicPassage), 'long source passage must be preserved without client-side summarization');
 
+assert.equal(translate.isSafeTranslationOutput('De imam benadrukt dat dankbaarheid het hart tot rust brengt.'), true, 'valid translations must remain');
+assert.equal(translate.isSafeTranslationOutput('I cannot provide a reliable translation of this passage.'), false, 'explicit refusal meta-output must be rejected');
+assert.equal(translate.isSafeTranslationOutput('I notice that the new passage appears to be a fragmentary phrase with a possible transcription error. Please verify the audio.'), false, 'analysis-style meta-output must be rejected');
+assert.equal(translate.isSafeTranslationOutput('Deze vertaling benadrukt het belang van oprechtheid.'), true, 'a normal sentence containing translation must not be rejected by one generic word');
+assert.equal(translate.validateTranslationOutput('NO_TRANSLATION'), '');
+assert.match(translate.SYSTEM_PROMPT, /If the passage cannot be translated reliably, return an empty response/);
+assert.match(translate.SYSTEM_PROMPT, /Never explain why, never analyze the input, and never address the user/);
+
+for (const unsafeOutput of [
+  'I cannot translate this reliably.',
+  'The passage appears to be corrupted and may contain a possible transcription error.'
+]) {
+  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ content: [{ text: unsafeOutput }] }) });
+  const rejected = responseRecorder();
+  await translate.default({ method: 'POST', body: { text: 'Ù†Øµ Ø¹Ø±Ø¨ÙŠ', sourceLanguage: 'ar', targetLanguage: 'nl' } }, rejected);
+  assert.equal(rejected.statusCode, 200);
+  assert.equal(rejected.body.translation, '', 'unsafe provider output must become an empty successful response');
+}
+
 console.log('translation API tests passed');

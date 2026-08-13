@@ -55,7 +55,32 @@ Harde regels:
 - Maak een afgebroken gedachte niet zelf af; vertaal alleen wat werkelijk in de nieuwe passage staat.
 - Behandel islamitische termen en eigennamen zorgvuldig en consistent.
 - Als de nieuwe passage onvoldoende bruikbare inhoud bevat, antwoord exact met een lege string.
+- If the passage cannot be translated reliably, return an empty response. Never explain why, never analyze the input, and never address the user.
 - Geef alleen de vertaling; geen labels, aanhalingstekens of toelichting.`;
+
+const META_OUTPUT_PATTERNS = Object.freeze([
+  /\bi (?:cannot|can't|am unable to) (?:provide )?(?:a )?(?:reliable )?translat(?:e|ion)\b/i,
+  /\b(?:the|this|new) passage (?:appears|seems) to be\b/i,
+  /\bpossible transcription error\b/i,
+  /\bplease (?:verify|check) (?:the )?(?:audio|transcript|source|input)\b/i,
+  /\b(?:as an ai|i notice that|linguistic analysis|source input)\b/i,
+  /\b(?:je ne peux pas|impossible de) (?:fournir )?(?:une )?traduction fiable\b/i,
+  /\b(?:ich kann|es ist mir nicht mÃ¶glich),? (?:keine )?(?:zuverlÃ¤ssige )?Ã¼bersetzung\b/i,
+  /\bno puedo (?:proporcionar )?una traducciÃ³n fiable\b/i,
+  /(?:Ù„Ø§ Ø£Ø³ØªØ·ÙŠØ¹|ÙŠØªØ¹Ø°Ø± Ø¹Ù„ÙŠ)\s+(?:ØªÙ‚Ø¯ÙŠÙ…\s+)?ØªØ±Ø¬Ù…Ø©\s+Ù…ÙˆØ«ÙˆÙ‚Ø©/i
+]);
+
+export function isSafeTranslationOutput(value) {
+  if (typeof value !== 'string') return false;
+  const text = value.replace(/\s+/g, ' ').trim();
+  if (!text || text === 'NO_TRANSLATION') return false;
+  return !META_OUTPUT_PATTERNS.some(pattern => pattern.test(text));
+}
+
+export function validateTranslationOutput(value) {
+  const text = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+  return isSafeTranslationOutput(text) ? text : '';
+}
 
 function sendError(res, status, code, message) {
   return res.status(status).json({ error: { code, message } });
@@ -165,9 +190,11 @@ export default async function handler(req, res) {
       return sendError(res, 502, 'TRANSLATION_ERROR', 'Vertaling kon niet worden verwerkt.');
     }
 
-    const translation = data.content && data.content[0] && typeof data.content[0].text === 'string'
+    const providerOutput = data.content && data.content[0] && typeof data.content[0].text === 'string'
       ? data.content[0].text.trim()
       : '';
+    const translation = validateTranslationOutput(providerOutput);
+    if (!translation && providerOutput) console.warn('[translate] rejected unsafe provider output', { reason: 'META_OUTPUT' });
     return res.status(200).json({ translation });
   } catch (error) {
     console.error('[translate] request failed', { name: error.name, message: error.message });
