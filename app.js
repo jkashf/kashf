@@ -82,20 +82,6 @@ function updateCounter(){
 updateCounter();
 
 // =====================
-// HOME TIP (beginscherm)
-// =====================
-if(!localStorage.getItem('kashf_tip_dismissed')){
-  setTimeout(function(){
-    document.getElementById('home-tip').style.display='flex';
-    document.getElementById('tip-txt').textContent=u('homeTip');
-  },3500);
-}
-function dismissTip(){
-  document.getElementById('home-tip').style.display='none';
-  localStorage.setItem('kashf_tip_dismissed','1');
-}
-
-// =====================
 // HERINNERING (wisselt af)
 // =====================
 function startReminders(){
@@ -156,7 +142,6 @@ function updateUI(){
   document.getElementById('thanks-title').textContent=u('thanks');
   document.getElementById('thanks-sub').textContent=u('thanksSub');
   document.getElementById('thanks-close').textContent=u('thanksClose');
-  document.getElementById('tip-txt')&&(document.getElementById('tip-txt').textContent=u('homeTip'));
   updateCounter();
   var el=document.getElementById('reminder-el');
   if(el){var key='reminder'+(reminderIndex+1);el.textContent=u(key)||u('reminder1');}
