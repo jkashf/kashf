@@ -83,6 +83,7 @@
       bufferDurationMs: unitDurationMs(chunks),
       liveLatencyMs: liveLatencyMs(chunks, now),
       transcriptLatencyMs: Math.max(0, ...chunks.map(chunk => Number(chunk.transcriptLatencyMs) || 0)),
+      bufferWaitMs: Math.max(0, now - (Number(first.transcriptCompletedAt) || first.endedAt)),
       flushReason: reason
     };
   }
@@ -95,7 +96,6 @@
       this.onLifecycle = onLifecycle;
       this.chunks = [];
       this.timer = null;
-      this.queue = Promise.resolve();
       this.recoveryMode = false;
     }
 
@@ -131,8 +131,9 @@
       this.recoveryMode = unit.liveLatencyMs >= this.config.softMaximumLatencyMs
         ? true
         : (unit.liveLatencyMs <= this.config.targetLatencyMs ? false : this.recoveryMode);
-      this.queue = this.queue.then(() => this.onFlush(unit));
-      return this.queue.then(() => unit);
+      return Promise.resolve()
+        .then(() => this.onFlush(unit))
+        .then(() => unit);
     }
 
     pause() { return this.flush('PAUSE_FLUSH'); }

@@ -41,6 +41,8 @@ assert.match(translate.SYSTEM_PROMPT, /duidelijk zelf een Qur'an- of hadithcitaa
 assert.match(translate.SYSTEM_PROMPT, /Voeg nooit zelf een bronvermelding toe/);
 assert.match(translate.SYSTEM_PROMPT, /taqwa, dhikr, sunnah, fitrah en tawakkul/);
 assert.match(translate.SYSTEM_PROMPT, /Profeet Mohammed ﷺ.*alleen wanneer de identiteit/s);
+assert.match(translate.SYSTEM_PROMPT, /Allah ﷻ.*passende, spaarzame momenten/s);
+assert.doesNotMatch(translate.SYSTEM_PROMPT, /Allah ﷺ/);
 assert.match(translate.SYSTEM_PROMPT, /andere zeker geïdentificeerde profeet.*عليه السلام/s);
 assert.match(translate.SYSTEM_PROMPT, /onduidelijke naam.*nooit.*gok/s);
 assert.match(translate.SYSTEM_PROMPT, /geen religieuze status/);
@@ -61,7 +63,7 @@ assert.ok(firstTermMessage.endsWith('ومن ثمرات التقوى'), 'Arabic s
 
 const followupTermMessage = translate.buildUserMessage({
   text: 'والتقوى هنا', sourceLanguage: 'ar', targetLanguage: 'nl',
-  context: { recentOriginals: ['التقوى'], recentTranslations: ['Taqwa (bewust leven met ontzag voor Allah ﷺ)'], introducedIslamicTerms: ['taqwa'] }
+  context: { recentOriginals: ['التقوى'], recentTranslations: ['Taqwa (bewust leven met ontzag voor Allah ﷻ)'], introducedIslamicTerms: ['taqwa'] }
 });
 assert.match(followupTermMessage, /REEDS GEÏNTRODUCEERDE TERMEN[\s\S]*taqwa/);
 assert.ok(followupTermMessage.endsWith('والتقوى هنا'));

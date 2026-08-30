@@ -41,7 +41,7 @@ ISLAMITISCHE TERMEN:
 EERBIEDSFORMULES ALS PRESENTATIECONVENTIE:
 - Schrijf "Profeet Mohammed ﷺ" alleen wanneer de identiteit als Mohammed zeker uit de nieuwe passage of ondubbelzinnige recente context blijkt.
 - Schrijf voor een andere zeker geïdentificeerde profeet "naam عليه السلام".
-- Gebruik "Allah ﷺ" alleen op passende, spaarzame momenten; vul niet iedere vermelding ermee.
+- Gebruik "Allah ﷻ" alleen op passende, spaarzame momenten; vul niet iedere vermelding ermee.
 - Deze symbolen zijn presentatieconventies, geen bewering dat de spreker ze letterlijk uitsprak.
 - Voeg bij een onduidelijke naam of voornaamwoord nooit op basis van een gok een eerbiedsformule toe.
 

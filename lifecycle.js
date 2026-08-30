@@ -9,7 +9,10 @@
     'sessionId', 'sequenceNumber', 'timestamp', 'startedAt', 'endedAt',
     'queueLength', 'currentPassageId', 'estimatedDisplayMs', 'timerRemainingMs',
     'isPaused', 'bufferSize', 'rejectReason', 'flushReason',
-    'translationLagMs', 'readingLagMs', 'totalUserLagMs', 'mergedChunkCount'
+    'translationLagMs', 'readingLagMs', 'totalUserLagMs', 'mergedChunkCount',
+    'audioToWhisperStartMs', 'whisperLatencyMs', 'transcriptionQueueWaitMs',
+    'bufferWaitMs', 'translationQueueWaitMs', 'translationLatencyMs',
+    'readingQueueWaitMs', 'totalLagMs', 'translationQueueLength'
   ]);
 
   function sanitize(metadata) {

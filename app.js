@@ -15,6 +15,9 @@ const audioController=new window.KashfAudioController({speechLanguages:SPEECH_LA
 let khutbahBuffer=null;
 let readingPacer=null;
 let readingRenderToken=0;
+let translationQueue=Promise.resolve();
+let translationQueueLength=0;
+let readingQueueTimings=new Map();
 
 function generateSessionId(){
   return (window.crypto&&window.crypto.randomUUID)?window.crypto.randomUUID():'session-'+Date.now()+'-'+Math.random().toString(36).slice(2);
@@ -23,6 +26,7 @@ function abortTranslation(){
   if(session.translationAbortController)session.translationAbortController.abort();
   session.translationAbortController=null;
 }
+function resetAsyncQueues(){translationQueue=Promise.resolve();translationQueueLength=0;readingQueueTimings=new Map();}
 function isDevelopmentHost(){return location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.hostname.endsWith('.vercel.app');}
 function logLifecycle(event,metadata){window.KashfLifecycle.log(event,metadata);}
 function logTranscriptRejection(reason){if(isDevelopmentHost())console.info('[Kashf transcript] rejected',{reason:reason});}
@@ -214,7 +218,7 @@ function startSession(){
   document.getElementById('live').classList.remove('hidden');
   document.getElementById('trans-feed').innerHTML='';
   addEmptyState();
-  session.id=generateSessionId();session.lastTranscript='';session.paused=false;session.ended=false;clearPendingTranscript();
+  session.id=generateSessionId();session.lastTranscript='';session.paused=false;session.ended=false;clearPendingTranscript();resetAsyncQueues();
   khutbahBuffer=isKhutbahMode()?createKhutbahBuffer():null;
   readingPacer=isKhutbahMode()?createReadingPacer():null;
   lastTranslation='';allTranslations=[];paused=false;
@@ -379,9 +383,12 @@ function startAudio(){
   });
 }
 
-async function translateKhutbahUnit(unit){
+function translateKhutbahUnit(unit){
   if(!isCurrentSession(session.id,unit.sessionId))return;
-  await translatePassage(unit.transcript,{
+  var queuedAt=Date.now();
+  translationQueueLength++;
+  logLifecycle('TRANSLATION_QUEUED',{sessionId:unit.sessionId,sequenceNumber:unit.sequenceNumber,timestamp:queuedAt,translationQueueLength:translationQueueLength,bufferWaitMs:unit.bufferWaitMs,flushReason:unit.flushReason});
+  var metadata={
     sessionId:unit.sessionId,
     sequenceNumber:unit.sequenceNumber,
     timestamp:unit.timestamp,
@@ -392,8 +399,15 @@ async function translateKhutbahUnit(unit){
     bufferDurationMs:unit.bufferDurationMs,
     liveLatencyMs:unit.liveLatencyMs,
     transcriptLatencyMs:unit.transcriptLatencyMs,
+    bufferWaitMs:unit.bufferWaitMs,
     flushReason:unit.flushReason
-  });
+  };
+  translationQueue=translationQueue.then(async function(){
+    if(!isCurrentSession(session.id,unit.sessionId))return;
+    translationQueueLength=Math.max(0,translationQueueLength-1);
+    metadata.translationQueueWaitMs=Math.max(0,Date.now()-queuedAt);
+    await translatePassage(unit.transcript,metadata);
+  }).catch(function(error){console.error('[translation queue] failed',{name:error.name,message:error.message});});
 }
 
 async function queueTranscriptForTranslation(text,metadata){
@@ -424,7 +438,7 @@ async function translatePassage(text,metadata){
   setStatus('processing',u('processing'));
   var controller=new AbortController();
   var translationStartedAt=Date.now();
-  logLifecycle('TRANSLATION_START',{sessionId:metadata.sessionId,sequenceNumber:metadata.sequenceNumber,timestamp:translationStartedAt,flushReason:metadata.flushReason||'DIRECT_MODE'});
+  logLifecycle('TRANSLATION_START',{sessionId:metadata.sessionId,sequenceNumber:metadata.sequenceNumber,timestamp:translationStartedAt,flushReason:metadata.flushReason||'DIRECT_MODE',bufferWaitMs:metadata.bufferWaitMs||0,translationQueueWaitMs:metadata.translationQueueWaitMs||0,translationQueueLength:translationQueueLength});
   session.translationAbortController=controller;
   try{
     var payload=buildTranslationPayload({transcript:text,sourceLanguage:srcLang,targetLanguage:outLang,passages:validSessionTranslations()});
@@ -437,7 +451,7 @@ async function translatePassage(text,metadata){
     }
     var tx=data.translation&&data.translation.trim();
     var translationCompletedAt=Date.now();
-    logLifecycle('TRANSLATION_DONE',{sessionId:metadata.sessionId,sequenceNumber:metadata.sequenceNumber,timestamp:translationCompletedAt,translationLagMs:translationCompletedAt-(metadata.startedAt||translationStartedAt),flushReason:metadata.flushReason||'DIRECT_MODE'});
+    logLifecycle('TRANSLATION_DONE',{sessionId:metadata.sessionId,sequenceNumber:metadata.sequenceNumber,timestamp:translationCompletedAt,translationLagMs:translationCompletedAt-(metadata.startedAt||translationStartedAt),translationLatencyMs:translationCompletedAt-translationStartedAt,translationQueueWaitMs:metadata.translationQueueWaitMs||0,bufferWaitMs:metadata.bufferWaitMs||0,totalLagMs:translationCompletedAt-(metadata.endedAt||translationStartedAt),flushReason:metadata.flushReason||'DIRECT_MODE'});
     hideProcessing();
     if(isValidTranslationText(tx)){
       lastTranslation=tx;
@@ -456,6 +470,9 @@ async function translatePassage(text,metadata){
         ,bufferDurationMs:metadata.bufferDurationMs||0
         ,transcriptLatencyMs:metadata.transcriptLatencyMs||null
         ,translationLatencyMs:translationCompletedAt-translationStartedAt
+        ,translationCompletedAt:translationCompletedAt
+        ,translationQueueWaitMs:metadata.translationQueueWaitMs||0
+        ,bufferWaitMs:metadata.bufferWaitMs||0
         ,liveLatencyMs:Date.now()-(metadata.startedAt||Date.now())
         ,flushReason:metadata.flushReason||'DIRECT_MODE'
       });
@@ -494,12 +511,18 @@ function logTranslationUnit(passage){
 function addPassage(passage){
   if(!isCurrentSession(session.id,passage.sessionId)||!isValidTranslationText(passage.translation))return;
   allTranslations=insertPassageInOrder(allTranslations,passage);
-  if(isKhutbahMode()&&!session.ended&&readingPacer)readingPacer.enqueueUnit(passage);
+  if(isKhutbahMode()&&!session.ended&&readingPacer){
+    readingQueueTimings.set(String(passage.sequenceNumber),Date.now());
+    readingPacer.enqueueUnit(passage);
+  }
   else renderFeed();
 }
 
 function renderCurrentReadingPassage(readingPassage){
   if(!isKhutbahMode()||session.ended)return;
+  var readingQueuedAt=readingQueueTimings.get(String(readingPassage.sequenceNumber));
+  var audioStartedAt=readingPassage.sourcePassageMetadata&&readingPassage.sourcePassageMetadata.audioStartedAt;
+  logLifecycle('READING_QUEUE_METRICS',{sessionId:session.id,sequenceNumber:readingPassage.sequenceNumber,timestamp:Date.now(),currentPassageId:readingPassage.id,readingQueueWaitMs:readingQueuedAt?Date.now()-readingQueuedAt:0,totalLagMs:audioStartedAt?Date.now()-audioStartedAt:0,isPaused:session.paused});
   var feed=document.getElementById('trans-feed');
   var token=++readingRenderToken;
   var previous=feed.querySelector('.reading-current');

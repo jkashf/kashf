@@ -143,13 +143,29 @@
     }
 
     enqueueTranscription(blob, metadata) {
+      metadata.transcriptionQueuedAt = Date.now();
       this.processingQueue = this.processingQueue
         .then(() => this.transcribe(blob, metadata))
         .catch(error => console.error('[audio] queue failed', error));
     }
 
+    dispatchTranscript(text, metadata) {
+      try {
+        const downstream = this.callbacks.onTranscript?.(text, metadata);
+        if (downstream && typeof downstream.catch === 'function') {
+          downstream.catch(error => console.error('[audio] transcript dispatch failed', { name: error.name, message: error.message }));
+        }
+      } catch (error) {
+        console.error('[audio] transcript dispatch failed', { name: error.name, message: error.message });
+      }
+    }
+
     async transcribe(blob, metadata) {
       if (!this.isCurrent(metadata.sessionId)) return;
+      metadata.whisperStartedAt = Date.now();
+      metadata.audioToWhisperStartMs = Math.max(0, metadata.whisperStartedAt - metadata.endedAt);
+      metadata.transcriptionQueueWaitMs = Math.max(0, metadata.whisperStartedAt - (metadata.transcriptionQueuedAt || metadata.endedAt));
+      root.KashfLifecycle?.log('WHISPER_START', metadata);
       const abortController = new AbortController();
       this.abortControllers.add(abortController);
       this.callbacks.onStatus?.('processing');
@@ -177,8 +193,9 @@
           metadata.transcriptionQuality = data.transcriptionQuality || null;
           metadata.transcriptCompletedAt = Date.now();
           metadata.transcriptLatencyMs = metadata.transcriptCompletedAt - metadata.endedAt;
+          metadata.whisperLatencyMs = metadata.transcriptCompletedAt - metadata.whisperStartedAt;
           root.KashfLifecycle?.log('WHISPER_ACCEPT', metadata);
-          await this.callbacks.onTranscript?.(data.text.trim(), metadata);
+          this.dispatchTranscript(data.text.trim(), metadata);
         }
       } catch (error) {
         if (error.name !== 'AbortError' && this.isCurrent(metadata.sessionId)) {
@@ -222,7 +239,7 @@
             };
             if (text && this.isCurrent(metadata.sessionId)) {
               this.processingQueue = this.processingQueue
-                .then(() => this.callbacks.onTranscript?.(text, metadata))
+                .then(() => this.dispatchTranscript(text, metadata))
                 .catch(error => console.error('[audio] browser transcript queue failed', error));
             }
           }, 400);
