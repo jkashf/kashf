@@ -127,7 +127,7 @@
       if (!this.chunks.length) return Promise.resolve(null);
       const chunks = this.chunks.splice(0);
       const unit = createUnit(chunks, reason, this.now());
-      this.onLifecycle('BUFFER_FLUSH', { sessionId: unit.sessionId, sequenceNumber: unit.sequenceNumber, timestamp: this.now(), bufferSize: chunks.length, mergedChunkCount: unit.mergedChunkCount, flushReason: reason, translationLagMs: unit.liveLatencyMs });
+      this.onLifecycle('BUFFER_FLUSH', { sessionId: unit.sessionId, sequenceNumber: unit.sequenceNumber, timestamp: this.now(), bufferSize: chunks.length, mergedChunkCount: unit.mergedChunkCount, bufferDurationMs: unit.bufferDurationMs, textLength: unit.transcript.length, flushReason: reason, translationLagMs: unit.liveLatencyMs });
       this.recoveryMode = unit.liveLatencyMs >= this.config.softMaximumLatencyMs
         ? true
         : (unit.liveLatencyMs <= this.config.targetLatencyMs ? false : this.recoveryMode);

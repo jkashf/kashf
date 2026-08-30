@@ -200,6 +200,7 @@
         queueLength: this.queue.length,
         currentPassageId: passage ? passage.id : null,
         estimatedDisplayMs: passage ? passage.estimatedReadingTimeMs : 0,
+        wordCount: passage ? countWords(passage.translation) : 0,
         timerRemainingMs: this.remainingMs,
         isPaused: this.paused,
         translationLagMs: metrics.translationLagMs,

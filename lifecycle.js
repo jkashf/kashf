@@ -12,8 +12,10 @@
     'translationLagMs', 'readingLagMs', 'totalUserLagMs', 'mergedChunkCount',
     'audioToWhisperStartMs', 'whisperLatencyMs', 'transcriptionQueueWaitMs',
     'bufferWaitMs', 'translationQueueWaitMs', 'translationLatencyMs',
-    'readingQueueWaitMs', 'totalLagMs', 'translationQueueLength'
+    'readingQueueWaitMs', 'totalLagMs', 'translationQueueLength',
+    'bufferDurationMs', 'textLength', 'wordCount'
   ]);
+  const events = [];
 
   function sanitize(metadata) {
     const safe = {};
@@ -26,8 +28,34 @@
 
   function log(event, metadata) {
     if (!enabled) return;
-    console.info(`[Kashf lifecycle] ${event}`, sanitize(metadata));
+    const safeMetadata = sanitize(metadata);
+    events.push({ event, metadata: safeMetadata });
+    if (events.length > 5000) events.shift();
+    console.info(`[Kashf lifecycle] ${event}`, safeMetadata);
   }
 
-  root.KashfLifecycle = Object.freeze({ enabled: Boolean(enabled), log, sanitize });
+  function exportMetrics() {
+    if (!enabled) return { schemaVersion: '1.0', exportedAt: new Date().toISOString(), events: [] };
+    return {
+      schemaVersion: '1.0',
+      exportedAt: new Date().toISOString(),
+      events: events.map(item => {
+        const metadata = { ...item.metadata };
+        delete metadata.sessionId;
+        delete metadata.currentPassageId;
+        return { event: item.event, metadata };
+      })
+    };
+  }
+
+  function downloadMetrics() {
+    if (!enabled || !root.Blob || !root.URL) return false;
+    const url = root.URL.createObjectURL(new Blob([JSON.stringify(exportMetrics(), null, 2)], { type: 'application/json' }));
+    const link = root.document.createElement('a');
+    link.href = url; link.download = `kashf-lifecycle-${Date.now()}.json`; link.click();
+    root.URL.revokeObjectURL(url);
+    return true;
+  }
+
+  root.KashfLifecycle = Object.freeze({ enabled: Boolean(enabled), log, sanitize, exportMetrics, downloadMetrics });
 })(window);

@@ -44,3 +44,24 @@ export function tenMinuteScenarios(wordsPerMinute = 245) {
     simulateScenario({ name: 'one_30_second_translation_then_recovery', wordsPerPassage: words, arrivalIntervalsMs: [20000], translationDelaysMs: [4000, 4000, 4000, 4000, 30000, 4000, 4000, 4000], wordsPerMinute })
   ];
 }
+
+export function compareLifecyclePacing(exportData, speeds = [210, 230, 245, 260, 275], minimums = [5000, 4000]) {
+  const passages = (exportData?.events || []).filter(item => item.event === 'PACER_SHOW' && Number(item.metadata?.wordCount) > 0);
+  return speeds.flatMap(wordsPerMinute => minimums.map(minimumDisplayMs => {
+    const durations = passages.map(item => visibilityMs(item.metadata.wordCount, { wordsPerMinute, minimumDisplayMs, maximumDisplayMs: 22000 }));
+    const currentDurations = passages.map(item => Number(item.metadata.estimatedDisplayMs) || 0);
+    let displayAvailableAt = 0;
+    const queueWaits = passages.map((item, index) => { const readyAt = Number(item.metadata.timestamp) || 0; const displayAt = Math.max(readyAt, displayAvailableAt); displayAvailableAt = displayAt + durations[index]; return displayAt - readyAt; });
+    return {
+      wordsPerMinute, minimumDisplayMs, passageCount: passages.length,
+      averageVisibilityMs: durations.length ? Math.round(durations.reduce((sum, value) => sum + value, 0) / durations.length) : null,
+      accumulatedReadingMs: durations.reduce((sum, value) => sum + value, 0),
+      averageReadingQueueWaitMs: queueWaits.length ? Math.round(queueWaits.reduce((sum, value) => sum + value, 0) / queueWaits.length) : null,
+      accumulatedReadingLagMs: queueWaits.reduce((sum, value) => sum + value, 0),
+      maximumReadingQueueWaitMs: queueWaits.length ? Math.max(...queueWaits) : null,
+      currentAccumulatedReadingMs: currentDurations.reduce((sum, value) => sum + value, 0),
+      likelyUnnecessaryWaitCount: durations.filter((value, index) => value + 1500 < currentDurations[index]).length,
+      potentiallyAggressiveCount: durations.filter(value => value <= minimumDisplayMs).length
+    };
+  }));
+}

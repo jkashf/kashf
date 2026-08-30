@@ -1,0 +1,12 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","title":"Kashf real audio fixture","type":"object",
+  "required":["id","file","durationSeconds","category","languageProfile","expectedLanguageSwitches","humanVerified","referenceTranscript","provenance"],
+  "properties":{
+    "id":{"type":"string"},"file":{"type":["string","null"],"pattern":"\\.(mp3|m4a|wav|webm)$"},"durationSeconds":{"type":["number","null"],"minimum":0},
+    "category":{"enum":["formal_arabic","darija","mixed_ar_darija","quran","hadith","audio_condition"]},
+    "languageProfile":{"enum":["ar","darija","mixed_ar_darija","quran_ar","hadith_ar"]},
+    "expectedLanguageSwitches":{"type":"array","items":{"type":"object","required":["startMs","endMs","profile"],"properties":{"startMs":{"type":"number"},"endMs":{"type":"number"},"profile":{"enum":["ar","darija","quran_ar","hadith_ar","french_loan","mixed_within_segment"]}}}},
+    "mixedWithinSegment":{"type":"boolean"},"humanVerified":{"type":"boolean"},"reviewer":{"type":["string","null"]},"referenceTranscript":{"type":["string","null"]},"notes":{"type":"string"},
+    "provenance":{"type":"object","required":["source","permissionStatus","anonymized","containsIdentifiableSpeaker","allowedForLocalBenchmark"],"properties":{"source":{"type":"string"},"permissionStatus":{"type":"string"},"anonymized":{"type":"boolean"},"containsIdentifiableSpeaker":{"type":"boolean"},"allowedForLocalBenchmark":{"type":"boolean"}}}
+  }
+}

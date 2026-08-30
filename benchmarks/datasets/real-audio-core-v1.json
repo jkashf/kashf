@@ -1,0 +1,17 @@
+{
+  "datasetVersion": "2.0.0",
+  "description": "Placeholders for the first 18 real, human-verified fixtures. No accuracy result exists until local audio and verified references are supplied.",
+  "fixtures": [
+    {"id":"formal_ar_01","category":"formal_arabic","languageProfile":"ar"},{"id":"formal_ar_02","category":"formal_arabic","languageProfile":"ar"},{"id":"formal_ar_03","category":"formal_arabic","languageProfile":"ar"},{"id":"formal_ar_04","category":"formal_arabic","languageProfile":"ar"},
+    {"id":"darija_01","category":"darija","languageProfile":"darija"},{"id":"darija_02","category":"darija","languageProfile":"darija"},{"id":"darija_03","category":"darija","languageProfile":"darija"},{"id":"darija_04","category":"darija","languageProfile":"darija"},
+    {"id":"mixed_ar_darija_01","category":"mixed_ar_darija","languageProfile":"mixed_ar_darija"},{"id":"mixed_ar_darija_02","category":"mixed_ar_darija","languageProfile":"mixed_ar_darija"},{"id":"mixed_ar_darija_03","category":"mixed_ar_darija","languageProfile":"mixed_ar_darija"},{"id":"mixed_ar_darija_04","category":"mixed_ar_darija","languageProfile":"mixed_ar_darija"},
+    {"id":"quran_explanation_01","category":"quran","languageProfile":"quran_ar"},{"id":"quran_explanation_02","category":"quran","languageProfile":"quran_ar"},
+    {"id":"hadith_explanation_01","category":"hadith","languageProfile":"hadith_ar"},{"id":"hadith_explanation_02","category":"hadith","languageProfile":"hadith_ar"},
+    {"id":"mosque_audio_reverb_01","category":"audio_condition","languageProfile":"mixed_ar_darija"},{"id":"mosque_audio_noise_01","category":"audio_condition","languageProfile":"mixed_ar_darija"}
+  ],
+  "defaults": {
+    "file": null, "durationSeconds": null, "expectedLanguageSwitches": [], "mixedWithinSegment": false,
+    "verificationStatus": "pending", "humanVerified": false, "reviewer": null, "referenceTranscript": null, "notes": "Awaiting real consented fixture.",
+    "provenance": {"source":"pending","permissionStatus":"pending","anonymized":false,"containsIdentifiableSpeaker":true,"allowedForLocalBenchmark":false}
+  }
+}

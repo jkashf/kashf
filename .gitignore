@@ -1,0 +1,5 @@
+# Local real-audio Quality Gate fixtures must never be committed.
+benchmarks/fixtures/audio/*
+!benchmarks/fixtures/audio/.gitkeep
+benchmarks/reviews/local/*
+!benchmarks/reviews/local/.gitkeep

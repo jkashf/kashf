@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "fixtureId": "replace-with-fixture-id",
+  "reviewerId": "local-reviewer-id",
+  "reviewedAt": null,
+  "variantScores": {
+    "Variant A": {
+      "meaningFidelity": null,
+      "dutchNaturalness": null,
+      "religiousIntegrity": null,
+      "completeness": null,
+      "liveReadability": null
+    },
+    "Variant B": {
+      "meaningFidelity": null,
+      "dutchNaturalness": null,
+      "religiousIntegrity": null,
+      "completeness": null,
+      "liveReadability": null
+    },
+    "Variant C": {
+      "meaningFidelity": null,
+      "dutchNaturalness": null,
+      "religiousIntegrity": null,
+      "completeness": null,
+      "liveReadability": null
+    }
+  },
+  "preferredVariant": "tie",
+  "flags": [],
+  "notes": ""
+}

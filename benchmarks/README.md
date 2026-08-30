@@ -9,12 +9,53 @@ Use Node.js 18 or newer:
 ```text
 node benchmarks/run.mjs
 node benchmarks/quality-gate.test.mjs
+node benchmarks/phase2.mjs dry-run
+node benchmarks/phase2.mjs live-plan
+node benchmarks/phase2.mjs summarize-reviews
+node benchmarks/phase2.test.mjs
 ```
 
 The runner makes no network or paid provider calls. It writes:
 
 - `reports/current.json`: machine-readable scores, flags, pacing simulations and latency budget.
 - `reports/blind-review.html`: neutral Variant A/B/C human-review sheet.
+- `reports/phase2-dry-run.json`: real-audio readiness, adapter matrix, translation tracks, lifecycle analysis and offline pacing comparison.
+- `reports/review-template.json`: machine-readable local review template.
+
+## Real-audio workflow
+
+1. Copy a consented `.mp3`, `.m4a`, `.wav`, or `.webm` file into `benchmarks/fixtures/audio/`. This directory is ignored by Git.
+2. Replace one placeholder in `datasets/real-audio-core-v1.json` with its relative filename, duration, provenance/privacy fields, reviewer, verified transcript and optional language-switch segments.
+3. Set `allowedForLocalBenchmark=true` only when permission is documented. Set `humanVerified=true` only after transcript review.
+4. Run `node benchmarks/phase2.mjs dry-run`. The fixture becomes `ready`; missing or unverified fixtures remain `not_run`.
+5. Run `node benchmarks/phase2.mjs live-plan` before any provider work. It prints fixture/configuration/request counts and performs zero calls.
+
+Long files can use the deterministic `segmentPlan(durationSeconds, segmentSeconds)` helper. This does not change production chunking.
+
+## STT matrix
+
+- CURRENT_STT: `whisper-1`, `language=ar`, `verbose_json`, segment timestamps.
+- WHISPER_AUTO: `whisper-1`, no language field, otherwise identical.
+- GPT4O_MINI_TRANSCRIBE: `gpt-4o-mini-transcribe`, JSON plus optional token logprobs.
+- GPT4O_TRANSCRIBE: `gpt-4o-transcribe`, JSON plus optional token logprobs.
+
+Official API behavior differs: GPT-4o transcribe models support only JSON response format, so Whisper segment fields (`no_speech_prob`, `avg_logprob`, `compression_ratio`) are never fabricated or filtered for them. All adapters normalize into one internal result schema with nullable segments/language/metadata and usage-based cost fields. No price is hardcoded.
+
+Live execution is deliberately not part of the default command. `live-plan` must be reviewed first; opt-in enforcement requires `--confirm-live`. Fase 2 dry-run performs no provider call.
+
+## Lifecycle export
+
+On localhost or Vercel Preview only, run this manually in the browser console after a physical session:
+
+```text
+KashfLifecycle.downloadMetrics()
+```
+
+It exports sanitized numeric/event metadata only. It excludes audio, transcript text, translations, API keys, session IDs and passage IDs. Analyze an export with the lifecycle analyzer or replace the synthetic dry-run input while keeping private exports outside version control.
+
+## Reviews
+
+Candidate order is reproducibly shuffled per fixture and seed. Copy `reports/review-template.json` into ignored `benchmarks/reviews/local/`, create one file per reviewer/fixture, and fill scores 1–10 plus preference and flags. Qur'an/hadith fixtures require at least two independent reviewers. `summarize-reviews` reports averages, score range and preference agreement.
 
 ## Dataset policy
 

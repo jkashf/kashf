@@ -1,0 +1,12 @@
+{
+  "schemaVersion":"1.0","exportedAt":"2026-01-01T00:10:00.000Z","synthetic":true,
+  "events":[
+    {"event":"AUDIO_CHUNK","metadata":{"timestamp":0,"sequenceNumber":0}},
+    {"event":"WHISPER_ACCEPT","metadata":{"timestamp":10000,"sequenceNumber":0,"transcriptionQueueWaitMs":0,"whisperLatencyMs":2000}},
+    {"event":"BUFFER_FLUSH","metadata":{"timestamp":30000,"sequenceNumber":0,"bufferWaitMs":20000,"bufferDurationMs":16000,"mergedChunkCount":2,"bufferSize":2,"textLength":180,"flushReason":"COMPLETE_THOUGHT"}},
+    {"event":"TRANSLATION_DONE","metadata":{"timestamp":35000,"sequenceNumber":0,"translationQueueWaitMs":0,"translationLatencyMs":5000,"translationQueueLength":0,"totalLagMs":35000}},
+    {"event":"PACER_SHOW","metadata":{"timestamp":35000,"sequenceNumber":0,"wordCount":35,"estimatedDisplayMs":10000,"readingQueueWaitMs":0,"totalLagMs":35000}},
+    {"event":"TRANSLATION_DONE","metadata":{"timestamp":60000,"sequenceNumber":1,"translationQueueWaitMs":1000,"translationLatencyMs":6000,"translationQueueLength":1,"totalLagMs":36000}},
+    {"event":"PACER_SHOW","metadata":{"timestamp":61000,"sequenceNumber":1,"wordCount":50,"estimatedDisplayMs":14286,"readingQueueWaitMs":1000,"totalLagMs":37000}}
+  ]
+}
