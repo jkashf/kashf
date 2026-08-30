@@ -28,7 +28,7 @@ function abortTranslation(){
 }
 function resetAsyncQueues(){translationQueue=Promise.resolve();translationQueueLength=0;readingQueueTimings=new Map();}
 function isDevelopmentHost(){return location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.hostname.endsWith('.vercel.app');}
-function logLifecycle(event,metadata){window.KashfLifecycle.log(event,metadata);}
+function logLifecycle(event,metadata){try{window.KashfLifecycle&&window.KashfLifecycle.log&&window.KashfLifecycle.log(event,metadata);}catch(_){} }
 function logTranscriptRejection(reason){if(isDevelopmentHost())console.info('[Kashf transcript] rejected',{reason:reason});}
 function clearPendingTranscript(){clearTimeout(session.pendingTimer);session.pendingTimer=null;session.pendingTranscript=null;}
 function isKhutbahMode(){return session.mode==='khutbah';}

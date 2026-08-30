@@ -50,6 +50,7 @@
   }
 
   function mergedText(chunks) { return normalize(chunks.map(chunk => chunk.text).join(' ')); }
+  function emitLifecycle(callback, event, metadata) { try { callback(event, metadata); } catch (_) {} }
 
   function decideFlush(chunks, now = Date.now(), config = BUFFER_CONFIG) {
     if (!chunks.length) return { flush: false, reason: null, latencyMs: 0, durationMs: 0 };
@@ -101,7 +102,7 @@
 
     add(chunk) {
       this.chunks.push(chunk);
-      this.onLifecycle('BUFFER_ADD', { sessionId: chunk.sessionId, sequenceNumber: chunk.sequenceNumber, timestamp: this.now(), bufferSize: this.chunks.length });
+      emitLifecycle(this.onLifecycle, 'BUFFER_ADD', { sessionId: chunk.sessionId, sequenceNumber: chunk.sequenceNumber, timestamp: this.now(), bufferSize: this.chunks.length });
       const effectiveConfig = this.recoveryMode ? {
         ...this.config,
         maximumChunksPerUnit: this.config.recoveryMaximumChunksPerUnit,
@@ -127,7 +128,7 @@
       if (!this.chunks.length) return Promise.resolve(null);
       const chunks = this.chunks.splice(0);
       const unit = createUnit(chunks, reason, this.now());
-      this.onLifecycle('BUFFER_FLUSH', { sessionId: unit.sessionId, sequenceNumber: unit.sequenceNumber, timestamp: this.now(), bufferSize: chunks.length, mergedChunkCount: unit.mergedChunkCount, bufferDurationMs: unit.bufferDurationMs, textLength: unit.transcript.length, flushReason: reason, translationLagMs: unit.liveLatencyMs });
+      emitLifecycle(this.onLifecycle, 'BUFFER_FLUSH', { sessionId: unit.sessionId, sequenceNumber: unit.sequenceNumber, timestamp: this.now(), bufferSize: chunks.length, mergedChunkCount: unit.mergedChunkCount, bufferDurationMs: unit.bufferDurationMs, textLength: unit.transcript.length, flushReason: reason, translationLagMs: unit.liveLatencyMs });
       this.recoveryMode = unit.liveLatencyMs >= this.config.softMaximumLatencyMs
         ? true
         : (unit.liveLatencyMs <= this.config.targetLatencyMs ? false : this.recoveryMode);

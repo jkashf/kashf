@@ -14,6 +14,7 @@
 
   function normalize(value) { return String(value || '').replace(/\s+/g, ' ').trim(); }
   function countWords(value) { const text = normalize(value); return text ? text.split(' ').length : 0; }
+  function emitLifecycle(callback, event, metadata) { try { callback(event, metadata); } catch (_) {} }
 
   function estimateReadingTimeMs(value, config = PACER_CONFIG) {
     const readingMs = (countWords(value) / config.wordsPerMinute) * 60000 + config.breathingPauseMs;
@@ -103,7 +104,7 @@
     enqueueUnit(unit) {
       const passages = createReadingPassages(unit, this.config);
       this.queue.push(...passages);
-      this.onLifecycle('PACER_ENQUEUE', this.lifecycleMetadata(passages[0]));
+      emitLifecycle(this.onLifecycle, 'PACER_ENQUEUE', this.lifecycleMetadata(passages[0]));
       this.emitState();
       if (!this.current && !this.paused) this.showNext();
       else if (this.current && this.minimumElapsed && !this.paused) this.showNext();
@@ -118,7 +119,7 @@
         this.current = null;
         this.remainingMs = 0;
         this.visibleStartedAt = null;
-        this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(null));
+        emitLifecycle(this.onLifecycle, 'PACER_ADVANCE', this.lifecycleMetadata(null));
         this.emitState();
         return null;
       }
@@ -129,14 +130,14 @@
       this.remainingMs = this.current.estimatedReadingTimeMs;
       this.minimumElapsed = false;
       this.onShow(this.current);
-      this.onLifecycle('PACER_SHOW', this.lifecycleMetadata(this.current));
+      emitLifecycle(this.onLifecycle, 'PACER_SHOW', this.lifecycleMetadata(this.current));
       this.emitState();
       this.timer = setTimeout(() => {
         this.timer = null;
         this.remainingMs = 0;
         this.minimumElapsed = true;
         if (this.queue.length) {
-          this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(this.current));
+          emitLifecycle(this.onLifecycle, 'PACER_ADVANCE', this.lifecycleMetadata(this.current));
           this.showNext();
         } else this.emitState();
       }, this.remainingMs);
@@ -169,7 +170,7 @@
           this.remainingMs = 0;
           this.minimumElapsed = true;
           if (this.queue.length) {
-            this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(this.current));
+            emitLifecycle(this.onLifecycle, 'PACER_ADVANCE', this.lifecycleMetadata(this.current));
             this.showNext();
           } else this.emitState();
         }, Math.max(250, this.remainingMs));

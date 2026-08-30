@@ -28,10 +28,14 @@
 
   function log(event, metadata) {
     if (!enabled) return;
-    const safeMetadata = sanitize(metadata);
-    events.push({ event, metadata: safeMetadata });
-    if (events.length > 5000) events.shift();
-    console.info(`[Kashf lifecycle] ${event}`, safeMetadata);
+    try {
+      const safeMetadata = sanitize(metadata);
+      events.push({ event, metadata: safeMetadata });
+      if (events.length > 5000) events.shift();
+      try { root.console && root.console.info && root.console.info(`[Kashf lifecycle] ${event}`, safeMetadata); } catch (_) {}
+    } catch (_) {
+      // Observability is best-effort and must never interrupt the live pipeline.
+    }
   }
 
   function exportMetrics() {
