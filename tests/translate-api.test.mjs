@@ -39,7 +39,7 @@ assert.match(translate.SYSTEM_PROMPT, /Behoud alle betekenisdragende details/);
 assert.match(translate.SYSTEM_PROMPT, /Gewone uitleg van de imam: natuurlijk, hedendaags en helder/);
 assert.match(translate.SYSTEM_PROMPT, /duidelijk zelf een Qur'an- of hadithcitaat/);
 assert.match(translate.SYSTEM_PROMPT, /Voeg nooit zelf een bronvermelding toe/);
-assert.match(translate.SYSTEM_PROMPT, /taqwa, dhikr, sunnah, fitrah en tawakkul/);
+assert.match(translate.SYSTEM_PROMPT, /taqwa, dhikr, sunnah, fitrah, tawakkul en shaytan/);
 assert.match(translate.SYSTEM_PROMPT, /Profeet Mohammed ﷺ.*alleen wanneer de identiteit/s);
 assert.match(translate.SYSTEM_PROMPT, /Allah ﷻ.*passende, spaarzame momenten/s);
 assert.doesNotMatch(translate.SYSTEM_PROMPT, /Allah ﷺ/);
@@ -53,6 +53,8 @@ assert.match(dutchStyleMessage, /goede menselijke livetolk/);
 assert.match(dutchStyleMessage, /verdrietigheden/);
 assert.match(dutchStyleMessage, /het verstand is niet in staat/);
 assert.match(dutchStyleMessage, /normaal, helder en volwassen Nederlands/);
+assert.match(dutchStyleMessage, /consequent "shaytan"/);
+assert.match(dutchStyleMessage, /Vermijd boekachtige of dramatische gedachtestreepjes/);
 
 const firstTermMessage = translate.buildUserMessage({
   text: 'ومن ثمرات التقوى', sourceLanguage: 'ar', targetLanguage: 'nl',

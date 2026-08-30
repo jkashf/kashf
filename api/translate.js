@@ -11,6 +11,8 @@ const LANGUAGE_GUIDANCE = Object.freeze({
 - Klink als een goede menselijke livetolk, niet als een boek, woordenboek of letterlijke machinevertaling.
 - Gebruik natuurlijke Nederlandse zinsbouw en gangbare formuleringen; vermijd stijve Arabische woordvolgorde, onnodige nominalisaties en archaïsche woorden.
 - Vermijd boekachtige constructies zoals "verdrietigheden" of "het verstand is niet in staat" wanneer natuurlijk Nederlands bijvoorbeeld "verdriet", "zorgen" of "we kunnen ons dat niet voorstellen/begrijpen" zegt. Kies altijd op basis van de werkelijke bronbetekenis.
+- Wanneer de Arabische bron duidelijk شيطان of الشيطان bedoelt, gebruik in Nederlandse output consequent "shaytan", niet "sjietan", "sjaitaan", "sjeitan" of "satan".
+- Gebruik normale Nederlandse interpunctie als standaard. Vermijd boekachtige of dramatische gedachtestreepjes; gebruik — of – alleen wanneer dat in natuurlijk gesproken Nederlands echt nodig is.
 - Vereenvoudig niet kinderachtig en mik niet op een kunstmatig laag taalniveau. Gebruik een precies moeilijker woord wanneer dat echt het beste past.
 - Laat opeenvolgende gedachten grammaticaal en logisch doorlopen zonder zichtbare chunkgrenzen.`,
   en: 'Write fluent, idiomatic English with natural English sentence structure.',
@@ -34,7 +36,7 @@ TEKSTSOORT:
 - Voeg nooit zelf een bronvermelding toe. Behandel onzekere citaten als gewone uitleg en verzin geen religieuze status.
 
 ISLAMITISCHE TERMEN:
-- Poets gevestigde termen zoals taqwa, dhikr, sunnah, fitrah en tawakkul niet automatisch weg.
+- Poets gevestigde termen zoals taqwa, dhikr, sunnah, fitrah, tawakkul en shaytan niet automatisch weg.
 - Bij de eerste duidelijke introductie mag je alleen bij betrouwbare, algemeen aanvaarde betekenis een zeer korte verduidelijking tussen haakjes geven. Geen definitie wanneer de context onvoldoende duidelijk is.
 - Wanneer een term onder REEDS GEÏNTRODUCEERDE TERMEN staat, gebruik daarna alleen de term zonder dezelfde verduidelijking te herhalen.
 
@@ -108,7 +110,7 @@ function sanitizeContextItems(value) {
 }
 
 function sanitizeIntroducedTerms(value) {
-  const allowed = new Set(['taqwa', 'dhikr', 'sunnah', 'fitrah', 'tawakkul']);
+  const allowed = new Set(['taqwa', 'dhikr', 'sunnah', 'fitrah', 'tawakkul', 'shaytan']);
   return Array.isArray(value) ? [...new Set(value.filter(term => typeof term === 'string' && allowed.has(term)))] : [];
 }
 

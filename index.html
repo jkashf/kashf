@@ -126,6 +126,14 @@ window.__kashfSplashFailsafe=setTimeout(function(){
         <button class="action-btn back-btn-live" id="stop-session-btn" onclick="askConfirmStop()" style="color:var(--red);border-color:rgba(192,57,43,0.3);background:rgba(192,57,43,0.05)">Stop sessie</button>
       </div>
     </div>
+    <header class="post-session-header" id="post-session-header" hidden>
+      <div class="post-session-logo">&#x643;&#x634;&#x641;</div>
+      <div>
+        <h1>Sessie beëindigd <span aria-hidden="true">✓</span></h1>
+        <p>Bedankt voor het luisteren</p>
+      </div>
+      <button type="button" onclick="downloadPDF()">PDF exporteren</button>
+    </header>
     <div class="trans-feed" id="trans-feed">
       <div class="empty-state" id="empty-state">
         <p id="empty-txt">Vertaling verschijnt hier zodra je spreekt</p>
@@ -135,6 +143,10 @@ window.__kashfSplashFailsafe=setTimeout(function(){
     <div class="heard-bar">
       <p class="heard-txt" id="heard-txt">Houd je telefoon bij de microfoon&hellip;</p>
     </div>
+    <footer class="post-session-actions" id="post-session-actions" hidden>
+      <button type="button" class="post-session-primary" onclick="startNewKhutbahSession()">Nieuwe sessie starten</button>
+      <button type="button" class="post-session-secondary" onclick="goBack()">Naar startscherm</button>
+    </footer>
     <div class="err-toast" id="err-toast"></div>
   </div>
 </div>

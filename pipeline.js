@@ -93,7 +93,7 @@
   }
 
   function hasSentenceEnding(value) {
-    return /[.!?؟؛:]\s*["'»”’)]*$/.test(normalizeTranscript(value));
+    return /[.!?؟]\s*["'»”’)]*$/.test(normalizeTranscript(value));
   }
 
   function shouldHoldTranscript(value, config = MERGE_CONFIG) {

@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const {
   VAD_CONFIG, decideVad, filterTranscript, buildContext,
   buildTranslationPayload, insertPassageInOrder, isCurrentSession,
-  MERGE_CONFIG, decidePendingTranscript, shouldHoldTranscript
+  MERGE_CONFIG, decidePendingTranscript, shouldHoldTranscript, hasSentenceEnding
 } = require('../pipeline.js');
 
 const silence = decideVad({ durationMs: 8000, totalFrames: 160, voicedFrames: 0, maximumRms: 0.003, maximumPeak: 0.01 });
@@ -32,6 +32,9 @@ const completedThought = decidePendingTranscript(firstHalf.text, 'عاد إلى 
 assert.equal(completedThought.hold, false);
 assert.equal(completedThought.text, 'إن المؤمن إذا أخطأ عاد إلى الله بالتوبة.');
 assert.equal(shouldHoldTranscript('هذه جملة كاملة.'), false, 'complete sentence must not be delayed');
+assert.equal(hasSentenceEnding('Het gedenken, dienaren van Allah,'), false, 'a comma must not become a semantic boundary');
+assert.equal(hasSentenceEnding('De imam zei:'), false, 'a colon must not flush before what follows');
+assert.equal(shouldHoldTranscript('Daarom'), true, 'a connector ending should wait where latency permits');
 assert.equal(MERGE_CONFIG.maximumWaitMs, 9500);
 
 let ordered = [];
@@ -49,9 +52,9 @@ assert.deepEqual(context.recentOriginals, ['Eerste onderwerp', 'Tweede onderwerp
 assert.ok(!context.recentOriginals.includes('NIEUWE TEKST'), 'context may not fabricate or replace new text');
 assert.deepEqual(context.introducedIslamicTerms, []);
 
-const firstTaqwaContext = buildContext([{ originalTranscript: 'التقوى', translation: 'Taqwa (bewust leven met ontzag voor Allah ﷺ) beschermt het hart.' }]);
+const firstTaqwaContext = buildContext([{ originalTranscript: 'التقوى', translation: 'Taqwa (bewust leven met ontzag voor Allah ﷻ) beschermt het hart.' }]);
 assert.deepEqual(firstTaqwaContext.introducedIslamicTerms, ['taqwa'], 'first successful introduction must mark taqwa as introduced');
-const followupTaqwaPayload = buildTranslationPayload({ transcript: 'والتقوى هنا', sourceLanguage: 'ar', targetLanguage: 'nl', passages: [{ originalTranscript: 'التقوى', translation: 'Taqwa (bewust leven met ontzag voor Allah ﷺ) beschermt het hart.' }] });
+const followupTaqwaPayload = buildTranslationPayload({ transcript: 'والتقوى هنا', sourceLanguage: 'ar', targetLanguage: 'nl', passages: [{ originalTranscript: 'التقوى', translation: 'Taqwa (bewust leven met ontzag voor Allah ﷻ) beschermt het hart.' }] });
 assert.deepEqual(followupTaqwaPayload.context.introducedIslamicTerms, ['taqwa'], 'follow-up must tell the translator not to repeat the explanation');
 
 for (const targetLanguage of ['nl', 'en', 'fr']) {

@@ -217,6 +217,8 @@ function startSession(){
   document.getElementById('home').classList.add('hidden');
   document.getElementById('live').classList.remove('hidden');
   document.getElementById('trans-feed').innerHTML='';
+  document.getElementById('post-session-header').hidden=true;
+  document.getElementById('post-session-actions').hidden=true;
   addEmptyState();
   session.id=generateSessionId();session.lastTranscript='';session.paused=false;session.ended=false;clearPendingTranscript();resetAsyncQueues();
   khutbahBuffer=isKhutbahMode()?createKhutbahBuffer():null;
@@ -256,11 +258,12 @@ async function confirmStop(){
   document.querySelector('meta[name="theme-color"]').setAttribute('content','#F8F5EE');
   releaseWakeLock();
   setKhutbahScrollLock(false);
+  document.getElementById('post-session-header').hidden=false;
+  document.getElementById('post-session-actions').hidden=false;
   renderFeed();
   // Teller verhogen
   sessionCount++;
   localStorage.setItem('kashf_sessions',sessionCount);
-  showThanks();
 }
 function showThanks(){
   document.getElementById('thanks-modal').style.display='flex';
@@ -287,6 +290,8 @@ function goBack(){
   document.querySelector('meta[name="theme-color"]').setAttribute('content','#F8F5EE');
   document.getElementById('live').classList.add('hidden');
   document.getElementById('home').classList.remove('hidden');
+  document.getElementById('post-session-header').hidden=true;
+  document.getElementById('post-session-actions').hidden=true;
   history.replaceState({page:'home'},'','');
   updateCounter();
 }
@@ -299,6 +304,12 @@ function keepKhutbahAtLive(){
   if(!isKhutbahMode()||session.ended)return;
   var feed=document.getElementById('trans-feed');
   feed.scrollTop=feed.scrollHeight;
+}
+
+function startNewKhutbahSession(){
+  goBack();
+  session.mode='khutbah';
+  showStartTip();
 }
 function blockKhutbahScroll(event){
   if(isKhutbahMode()&&!session.ended){event.preventDefault();keepKhutbahAtLive();}
@@ -537,7 +548,7 @@ function renderCurrentReadingPassage(readingPassage){
     feed.appendChild(entry);
     feed.scrollTop=0;
     requestAnimationFrame(function(){entry.classList.remove('reading-entering');});
-  },previous?850:0);
+  },previous?600:0);
 }
 
 function logReadingState(state){
@@ -554,17 +565,24 @@ function logReadingState(state){
 
 function renderFeed(){
   var feed=document.getElementById('trans-feed');
-  var empty=document.getElementById('empty-state');
-  if(empty) empty.remove();
-  feed.querySelectorAll('.trans-entry').forEach(function(entry){entry.remove();});
+  feed.innerHTML='';
   var validTranslations=validSessionTranslations();
   allTranslations=validTranslations;
+  if(session.ended){
+    var heading=document.createElement('div');
+    heading.className='session-reader-heading';
+    heading.innerHTML='<h2>Volledige sessie</h2><p>Je volledige vertaalde khutbah</p>';
+    feed.appendChild(heading);
+  }
   validTranslations.forEach(function(passage,index){
     var entry=document.createElement('div');
-    entry.className='trans-entry '+(index===allTranslations.length-1?'trans-new':'trans-old');
-    var date=new Date(passage.timestamp);
-    var ts=date.getHours()+':'+String(date.getMinutes()).padStart(2,'0');
-    entry.innerHTML='<p class="trans-text">'+esc(passage.translation)+'</p><div class="trans-ts">'+ts+'</div>';
+    if(session.ended){
+      entry.className='session-history-entry';
+      entry.innerHTML='<span class="session-history-number">'+(index+1)+'</span><p class="trans-text">'+esc(passage.translation)+'</p>';
+    }else{
+      entry.className='trans-entry '+(index===allTranslations.length-1?'trans-new':'trans-old');
+      entry.innerHTML='<p class="trans-text">'+esc(passage.translation)+'</p>';
+    }
     feed.appendChild(entry);
   });
   keepKhutbahAtLive();
@@ -620,7 +638,6 @@ function downloadPDF(){
   html+='.entry{padding:20px 0;border-bottom:1px solid #F0E8D8}';
   html+='.entry:last-child{border-bottom:none}';
   html+='.trans{font-size:1.08rem;line-height:1.88;color:#2A2018}';
-  html+='.ts{font-family:"Inter",Arial,sans-serif;font-size:0.58rem;color:#C8B890;margin-top:5px;letter-spacing:0.06em}';
   html+='.footer{border-top:1px solid #F0E8D0;padding:16px 48px;display:flex;justify-content:space-between}';
   html+='.footer span{font-family:"Inter",Arial,sans-serif;font-size:0.58rem;color:#C8B890;letter-spacing:0.12em;text-transform:uppercase}';
   html+='.thanks{text-align:center;padding:28px 48px;font-family:"Inter",Arial,sans-serif;font-size:0.78rem;color:#C8B890;font-style:italic}';
@@ -629,9 +646,7 @@ function downloadPDF(){
   html+='<div class="header"><div class="logo">&#x643;&#x634;&#x641;</div><div class="subtitle">Kashf &middot; Live Vertaling</div></div>';
   html+='<div class="entries">';
   entries.forEach(function(e){
-    var date=new Date(e.timestamp);
-    var ts=date.getHours()+':'+String(date.getMinutes()).padStart(2,'0');
-    html+='<div class="entry"><p class="trans">'+e.translation.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</p><p class="ts">'+ts+'</p></div>';
+    html+='<div class="entry"><p class="trans">'+e.translation.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</p></div>';
   });
   html+='</div>';
   html+='<div class="thanks">JazakAllah khayran &mdash; Allahu a\'lam</div>';

@@ -4,10 +4,10 @@
   root.KashfReadingPacer = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const PACER_CONFIG = Object.freeze({
-    wordsPerMinute: 170,
-    breathingPauseMs: 1800,
-    minimumDisplayMs: 6500,
-    maximumDisplayMs: 26000,
+    wordsPerMinute: 210,
+    breathingPauseMs: 0,
+    minimumDisplayMs: 5000,
+    maximumDisplayMs: 22000,
     targetMinimumWords: 30,
     targetMaximumWords: 55
   });
@@ -96,6 +96,7 @@
       this.timer = null;
       this.remainingMs = 0;
       this.visibleStartedAt = null;
+      this.minimumElapsed = false;
       this.paused = false;
     }
 
@@ -105,6 +106,7 @@
       this.onLifecycle('PACER_ENQUEUE', this.lifecycleMetadata(passages[0]));
       this.emitState();
       if (!this.current && !this.paused) this.showNext();
+      else if (this.current && this.minimumElapsed && !this.paused) this.showNext();
       return passages;
     }
 
@@ -125,12 +127,18 @@
       this.shown.push(this.current);
       this.visibleStartedAt = this.current.shownAt;
       this.remainingMs = this.current.estimatedReadingTimeMs;
+      this.minimumElapsed = false;
       this.onShow(this.current);
       this.onLifecycle('PACER_SHOW', this.lifecycleMetadata(this.current));
       this.emitState();
       this.timer = setTimeout(() => {
-        this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(this.current));
-        this.showNext();
+        this.timer = null;
+        this.remainingMs = 0;
+        this.minimumElapsed = true;
+        if (this.queue.length) {
+          this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(this.current));
+          this.showNext();
+        } else this.emitState();
       }, this.remainingMs);
       return this.current;
     }
@@ -150,10 +158,20 @@
       if (!this.paused) return;
       this.paused = false;
       if (this.current) {
+        if (this.minimumElapsed) {
+          if (this.queue.length) this.showNext();
+          else this.emitState();
+          return;
+        }
         this.visibleStartedAt = this.now();
         this.timer = setTimeout(() => {
-          this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(this.current));
-          this.showNext();
+          this.timer = null;
+          this.remainingMs = 0;
+          this.minimumElapsed = true;
+          if (this.queue.length) {
+            this.onLifecycle('PACER_ADVANCE', this.lifecycleMetadata(this.current));
+            this.showNext();
+          } else this.emitState();
         }, Math.max(250, this.remainingMs));
       } else this.showNext();
       this.emitState();

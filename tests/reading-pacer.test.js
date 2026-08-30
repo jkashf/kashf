@@ -5,9 +5,19 @@ const {
 } = require('../reading-pacer.js');
 
 const words25 = Array.from({ length: 25 }, (_, index) => `woord${index}`).join(' ');
-const expected25 = Math.round((25 / 170) * 60000 + PACER_CONFIG.breathingPauseMs);
-assert.equal(estimateReadingTimeMs(words25), expected25, '170 WPM calculation must include breathing pause');
+const expected25 = Math.round((25 / 210) * 60000);
+assert.equal(estimateReadingTimeMs(words25), expected25, '210 WPM calculation must define the minimum comfortable reading time');
 assert.equal(estimateReadingTimeMs('Korte zin.'), PACER_CONFIG.minimumDisplayMs, 'minimum display time must apply');
+
+const visibilityExamples = [20, 35, 50, 70].map(wordCount => {
+  const text = Array.from({ length: wordCount }, (_, index) => `w${index}`).join(' ');
+  return {
+    wordCount,
+    oldMs: Math.round(Math.min(26000, Math.max(6500, (wordCount / 170) * 60000 + 1800))),
+    newMs: estimateReadingTimeMs(text)
+  };
+});
+assert.deepEqual(visibilityExamples.map(item => item.newMs), [5714, 10000, 14286, 20000]);
 
 const sentenceA = Array.from({ length: 32 }, (_, index) => `a${index}`).join(' ') + '.';
 const sentenceB = Array.from({ length: 31 }, (_, index) => `b${index}`).join(' ') + '.';
@@ -19,6 +29,9 @@ assert.ok(split.every(part => /\.$/.test(part)), 'never split in the middle of a
 
 const longSingleSentence = Array.from({ length: 70 }, (_, index) => `lang${index}`).join(' ') + '.';
 assert.deepEqual(splitForReading(longSingleSentence), [longSingleSentence], 'one long sentence must remain intact');
+const quotedThought = 'De imam zei: “Gedenk Allah wanneer je alleen bent en wanneer je samenkomt.” Daarna vervolgde hij zijn uitleg.';
+assert.equal(splitForReading(quotedThought).join(' '), quotedThought, 'quoted content must remain complete and unchanged');
+assert.ok(splitForReading('Het gedenken, dienaren van Allah, brengt het hart tot rust. Daarna volgt dankbaarheid.').every(part => !/,$/.test(part)), 'a visible passage must not end at a comma');
 
 const unit = {
   sessionId: 'session', sequenceNumber: 4, timestamp: new Date(16000).toISOString(),
@@ -58,6 +71,16 @@ assert.notEqual(lag.translationLagMs, lag.readingLagMs, 'translation and reading
   await new Promise(resolve => setTimeout(resolve, 300));
   assert.equal(shown.length, 2, 'resume continues from the same reading queue');
   assert.equal(shown[1].partNumber, 1);
+
+  const waitingShown = [];
+  const waitingPacer = new ReadingPacer({ config: { minimumDisplayMs: 20, maximumDisplayMs: 20, breathingPauseMs: 0 }, onShow: passage => waitingShown.push(passage) });
+  waitingPacer.enqueueUnit({ ...unit, sequenceNumber: 20, translation: 'Passage zonder opvolger.' });
+  await new Promise(resolve => setTimeout(resolve, 35));
+  assert.equal(waitingPacer.current.sequenceNumber, 20, 'elapsed minimum time with an empty queue must retain the current passage');
+  waitingPacer.enqueueUnit({ ...unit, sequenceNumber: 21, translation: 'Later binnengekomen opvolger.' });
+  assert.equal(waitingShown.length, 2, 'a later passage must wake an elapsed pacer immediately');
+  assert.equal(waitingShown[1].sequenceNumber, 21);
+  waitingPacer.stop();
 
   const all = pacer.stop();
   assert.equal(all.length, 2);
@@ -111,7 +134,7 @@ assert.notEqual(lag.translationLagMs, lag.readingLagMs, 'translation and reading
   });
   wakePacer.enqueueUnit({ ...unit, sequenceNumber: 100, translation: 'Eerste passage.' });
   await new Promise(resolve => setTimeout(resolve, 30));
-  assert.equal(wakePacer.current, null, 'after an empty queue the pacer must become idle, not remain blocked by stale current');
+  assert.equal(wakePacer.current.sequenceNumber, 100, 'the last passage must remain visible while the queue is empty');
   wakePacer.enqueueUnit({ ...unit, sequenceNumber: 101, translation: 'Latere passage.' });
   assert.equal(wakeShown.length, 2, 'later arriving passage must restart an idle pacer immediately');
   assert.equal(wakeShown[1].sequenceNumber, 101);
@@ -128,5 +151,6 @@ assert.notEqual(lag.translationLagMs, lag.readingLagMs, 'translation and reading
   continuousPacer.stop();
   wakePacer.stop();
 
+  console.log(JSON.stringify({ visibilityExamples }, null, 2));
   console.log('reading pacer tests passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

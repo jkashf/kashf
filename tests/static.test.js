@@ -46,5 +46,15 @@ assert.match(app, /if\(!isCurrentSession\(session\.id,passage\.sessionId\)\|\|!i
 assert.match(app, /function downloadPDF\(\)\{\s*var entries=validSessionTranslations\(\)/, 'PDF must use the same validated session data');
 assert.match(app, /renderFeed\(\)[\s\S]*validSessionTranslations\(\)/, 'completed history must render only validated session data');
 assert.match(app, /setKhutbahScrollLock\(false\)[\s\S]*renderFeed\(\)/, 'stop must unlock and show validated complete history');
+assert.match(app, /session\.ended=true[\s\S]*post-session-header[\s\S]*renderFeed\(\)/, 'stop must enter the dedicated post-session state');
+assert.match(styles, /session-ended \.live-bar[^}]*display:none!important/, 'live status and controls must disappear after stop');
+assert.match(styles, /session-ended \.nav-right,\.app\.session-ended \.live-bar,\.app\.session-ended \.heard-bar/, 'all live-only header and microphone elements must be hidden');
+assert.match(html, /Sessie beëindigd[\s\S]*Bedankt voor het luisteren[\s\S]*PDF exporteren/);
+assert.match(html, /Nieuwe sessie starten[\s\S]*Naar startscherm/);
+assert.match(app, /Volledige sessie[\s\S]*Je volledige vertaalde khutbah/);
+assert.doesNotMatch(app, /session\.ended[\s\S]{0,800}trans-ts/, 'post-session rendering must not include timestamps');
+assert.match(app, /session-history-number/, 'completed passages should be subtly numbered');
+assert.match(app, /function startNewKhutbahSession\(\)[\s\S]*goBack\(\)[\s\S]*showStartTip\(\)/, 'new session must return through the Khutbah start tip');
+assert.match(styles, /app\.session-ended \.trans-feed\{[^}]*overflow-y:auto[^}]*touch-action:auto/, 'completed history must be freely scrollable');
 
 console.log('static integration tests passed');
