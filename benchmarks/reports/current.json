@@ -1,0 +1,1742 @@
+{
+  "qualityGateVersion": "1.0.0",
+  "generatedAt": "2026-08-30T15:23:14.813Z",
+  "datasetVersion": "1.0.0",
+  "limitations": [
+    "No real audio fixtures are included.",
+    "No human_verified Arabic or Darija accuracy fixtures are included.",
+    "Meaning, naturalness, religious integrity and completeness remain human-reviewed.",
+    "No paid provider calls were made."
+  ],
+  "fixtureCounts": {
+    "total": 7,
+    "synthetic": 7,
+    "humanVerified": 0
+  },
+  "configurations": {
+    "current": {
+      "label": "CURRENT",
+      "model": "claude-haiku-4-5-20251001",
+      "promptSource": "api/translate.js#SYSTEM_PROMPT",
+      "production": true
+    },
+    "candidate_a": {
+      "label": "CANDIDATE_A",
+      "model": "claude-haiku-4-5-20251001",
+      "promptSource": "benchmarks/prompts/candidate-a.txt",
+      "production": false
+    },
+    "candidate_b": {
+      "label": "CANDIDATE_B",
+      "model": "claude-haiku-4-5-20251001",
+      "promptSource": "benchmarks/prompts/candidate-b.txt",
+      "production": false
+    }
+  },
+  "thresholds": {
+    "hardReligiousOrSafetyFailures": 0,
+    "metaOutputFailures": 0,
+    "sequenceIntegrityPercent": 100,
+    "silenceFixtureRejectPercent": 100,
+    "meaningFidelityHumanAverage": 8,
+    "dutchNaturalnessHumanAverage": 8,
+    "religiousIntegrityHumanMinimum": 9,
+    "dashPer100WordsReviewAbove": 2
+  },
+  "results": [
+    {
+      "id": "silence_ar_boilerplate_reject",
+      "split": "development",
+      "category": "failure_safety",
+      "languageProfile": "non_speech",
+      "verificationStatus": "synthetic",
+      "configuration": "current",
+      "transcript": "اشتركوا في القناة",
+      "output": "",
+      "scores": {
+        "stt": null,
+        "meaningFidelity": null,
+        "dutchNaturalness": null,
+        "religiousIntegrity": null,
+        "completeness": null,
+        "terminology": null,
+        "presentationSuitability": null
+      },
+      "automaticMetrics": {
+        "wer": null,
+        "cer": null,
+        "reason": "requires human_verified transcript",
+        "wordCount": 0,
+        "dashCount": 0,
+        "dashPer100Words": 0,
+        "awkwardPatterns": []
+      },
+      "hardFailures": [],
+      "humanReviewRequired": [
+        "meaningFidelity",
+        "dutchNaturalness",
+        "religiousIntegrity",
+        "completeness"
+      ],
+      "notes": "Derived from the existing hallucination regression test; no real audio claim."
+    },
+    {
+      "id": "real_short_religious_speech_accept",
+      "split": "evaluation",
+      "category": "failure_safety",
+      "languageProfile": "ar",
+      "verificationStatus": "synthetic",
+      "configuration": "current",
+      "transcript": "شكرا",
+      "output": "Dank u.",
+      "scores": {
+        "stt": null,
+        "meaningFidelity": null,
+        "dutchNaturalness": null,
+        "religiousIntegrity": null,
+        "completeness": null,
+        "terminology": null,
+        "presentationSuitability": 10
+      },
+      "automaticMetrics": {
+        "wer": null,
+        "cer": null,
+        "reason": "requires human_verified transcript",
+        "wordCount": 2,
+        "dashCount": 0,
+        "dashPer100Words": 0,
+        "awkwardPatterns": []
+      },
+      "hardFailures": [],
+      "humanReviewRequired": [
+        "meaningFidelity",
+        "dutchNaturalness",
+        "religiousIntegrity",
+        "completeness"
+      ],
+      "notes": "Technical acceptance fixture with strong metadata; not evidence of STT accuracy."
+    },
+    {
+      "id": "dutch_shaytan_terminology",
+      "split": "development",
+      "category": "terminology",
+      "languageProfile": "nl_output",
+      "verificationStatus": "synthetic",
+      "configuration": "current",
+      "transcript": null,
+      "output": "Shaytan probeert de mens af te leiden.",
+      "scores": {
+        "stt": null,
+        "meaningFidelity": null,
+        "dutchNaturalness": null,
+        "religiousIntegrity": null,
+        "completeness": null,
+        "terminology": 10,
+        "presentationSuitability": 10
+      },
+      "automaticMetrics": {
+        "wer": null,
+        "cer": null,
+        "reason": "requires human_verified transcript",
+        "wordCount": 7,
+        "dashCount": 0,
+        "dashPer100Words": 0,
+        "awkwardPatterns": []
+      },
+      "hardFailures": [],
+      "humanReviewRequired": [
+        "meaningFidelity",
+        "dutchNaturalness",
+        "religiousIntegrity",
+        "completeness"
+      ],
+      "notes": "Style regression based on a user-observed iPhone output; source meaning is intentionally not asserted."
+    },
+    {
+      "id": "wrong_allah_honorific_hard_fail",
+      "split": "evaluation",
+      "category": "failure_safety",
+      "languageProfile": "nl_output",
+      "verificationStatus": "synthetic",
+      "configuration": "current",
+      "transcript": null,
+      "output": "",
+      "scores": {
+        "stt": null,
+        "meaningFidelity": null,
+        "dutchNaturalness": null,
+        "religiousIntegrity": null,
+        "completeness": null,
+        "terminology": 0,
+        "presentationSuitability": null
+      },
+      "automaticMetrics": {
+        "wer": null,
+        "cer": null,
+        "reason": "requires human_verified transcript",
+        "wordCount": 0,
+        "dashCount": 0,
+        "dashPer100Words": 0,
+        "awkwardPatterns": []
+      },
+      "hardFailures": [],
+      "humanReviewRequired": [
+        "meaningFidelity",
+        "dutchNaturalness",
+        "religiousIntegrity",
+        "completeness"
+      ],
+      "notes": "Deliberately failing safety probe; excluded from candidate averages and used to test hard-failure detection."
+    },
+    {
+      "id": "meta_output_hard_fail",
+      "split": "evaluation",
+      "category": "failure_safety",
+      "languageProfile": "nl_output",
+      "verificationStatus": "synthetic",
+      "configuration": "current",
+      "transcript": null,
+      "output": "",
+      "scores": {
+        "stt": null,
+        "meaningFidelity": null,
+        "dutchNaturalness": null,
+        "religiousIntegrity": null,
+        "completeness": null,
+        "terminology": null,
+        "presentationSuitability": null
+      },
+      "automaticMetrics": {
+        "wer": null,
+        "cer": null,
+        "reason": "requires human_verified transcript",
+        "wordCount": 0,
+        "dashCount": 0,
+        "dashPer100Words": 0,
+        "awkwardPatterns": []
+      },
+      "hardFailures": [],
+      "humanReviewRequired": [
+        "meaningFidelity",
+        "dutchNaturalness",
+        "religiousIntegrity",
+        "completeness"
+      ],
+      "notes": "Deliberately failing safety probe for the output validator."
+    },
+    {
+      "id": "dash_overuse_probe",
+      "split": "development",
+      "category": "dutch_style",
+      "languageProfile": "nl_output",
+      "verificationStatus": "synthetic",
+      "configuration": "current",
+      "transcript": null,
+      "output": "Gedenk Allah veel – in voorspoed en tegenspoed – en blijf dankbaar – iedere dag opnieuw.",
+      "scores": {
+        "stt": null,
+        "meaningFidelity": null,
+        "dutchNaturalness": null,
+        "religiousIntegrity": null,
+        "completeness": null,
+        "terminology": null,
+        "presentationSuitability": 4
+      },
+      "automaticMetrics": {
+        "wer": null,
+        "cer": null,
+        "reason": "requires human_verified transcript",
+        "wordCount": 16,
+        "dashCount": 3,
+        "dashPer100Words": 18.75,
+        "awkwardPatterns": []
+      },
+      "hardFailures": [],
+      "humanReviewRequired": [
+        "meaningFidelity",
+        "dutchNaturalness",
+        "religiousIntegrity",
+        "completeness"
+      ],
+      "notes": "Deliberately awkward style probe, not a reference translation."
+    },
+    {
+      "id": "sequence_integrity_probe",
+      "split": "evaluation",
+      "category": "presentation",
+      "languageProfile": "nl_output",
+      "verificationStatus": "synthetic",
+      "configuration": "current",
+      "transcript": null,
+      "output": "Technische sequencefixture.",
+      "scores": {
+        "stt": null,
+        "meaningFidelity": null,
+        "dutchNaturalness": null,
+        "religiousIntegrity": null,
+        "completeness": null,
+        "terminology": null,
+        "presentationSuitability": 10
+      },
+      "automaticMetrics": {
+        "wer": null,
+        "cer": null,
+        "reason": "requires human_verified transcript",
+        "wordCount": 2,
+        "dashCount": 0,
+        "dashPer100Words": 0,
+        "awkwardPatterns": []
+      },
+      "hardFailures": [],
+      "humanReviewRequired": [
+        "meaningFidelity",
+        "dutchNaturalness",
+        "religiousIntegrity",
+        "completeness"
+      ],
+      "notes": "Checks infrastructure ordering only."
+    }
+  ],
+  "detectorProbes": [
+    {
+      "id": "wrong_allah_honorific_hard_fail",
+      "expected": [
+        "WRONG_ALLAH_HONORIFIC"
+      ],
+      "detected": [
+        "WRONG_ALLAH_HONORIFIC"
+      ]
+    },
+    {
+      "id": "meta_output_hard_fail",
+      "expected": [
+        "META_OUTPUT"
+      ],
+      "detected": [
+        "META_OUTPUT"
+      ]
+    }
+  ],
+  "detectorCoveragePassed": true,
+  "pacerComparison": [
+    {
+      "wordsPerMinute": 230,
+      "passages": [
+        {
+          "words": 10,
+          "calculatedReadingMs": 2609,
+          "actualMinimumVisibilityMs": 5000
+        },
+        {
+          "words": 20,
+          "calculatedReadingMs": 5217,
+          "actualMinimumVisibilityMs": 5217
+        },
+        {
+          "words": 35,
+          "calculatedReadingMs": 9130,
+          "actualMinimumVisibilityMs": 9130
+        },
+        {
+          "words": 50,
+          "calculatedReadingMs": 13043,
+          "actualMinimumVisibilityMs": 13043
+        },
+        {
+          "words": 70,
+          "calculatedReadingMs": 18261,
+          "actualMinimumVisibilityMs": 18261
+        },
+        {
+          "words": 90,
+          "calculatedReadingMs": 23478,
+          "actualMinimumVisibilityMs": 22000
+        }
+      ]
+    },
+    {
+      "wordsPerMinute": 245,
+      "passages": [
+        {
+          "words": 10,
+          "calculatedReadingMs": 2449,
+          "actualMinimumVisibilityMs": 5000
+        },
+        {
+          "words": 20,
+          "calculatedReadingMs": 4898,
+          "actualMinimumVisibilityMs": 5000
+        },
+        {
+          "words": 35,
+          "calculatedReadingMs": 8571,
+          "actualMinimumVisibilityMs": 8571
+        },
+        {
+          "words": 50,
+          "calculatedReadingMs": 12245,
+          "actualMinimumVisibilityMs": 12245
+        },
+        {
+          "words": 70,
+          "calculatedReadingMs": 17143,
+          "actualMinimumVisibilityMs": 17143
+        },
+        {
+          "words": 90,
+          "calculatedReadingMs": 22041,
+          "actualMinimumVisibilityMs": 22000
+        }
+      ]
+    },
+    {
+      "wordsPerMinute": 260,
+      "passages": [
+        {
+          "words": 10,
+          "calculatedReadingMs": 2308,
+          "actualMinimumVisibilityMs": 5000
+        },
+        {
+          "words": 20,
+          "calculatedReadingMs": 4615,
+          "actualMinimumVisibilityMs": 5000
+        },
+        {
+          "words": 35,
+          "calculatedReadingMs": 8077,
+          "actualMinimumVisibilityMs": 8077
+        },
+        {
+          "words": 50,
+          "calculatedReadingMs": 11538,
+          "actualMinimumVisibilityMs": 11538
+        },
+        {
+          "words": 70,
+          "calculatedReadingMs": 16154,
+          "actualMinimumVisibilityMs": 16154
+        },
+        {
+          "words": 90,
+          "calculatedReadingMs": 20769,
+          "actualMinimumVisibilityMs": 20769
+        }
+      ]
+    },
+    {
+      "wordsPerMinute": 275,
+      "passages": [
+        {
+          "words": 10,
+          "calculatedReadingMs": 2182,
+          "actualMinimumVisibilityMs": 5000
+        },
+        {
+          "words": 20,
+          "calculatedReadingMs": 4364,
+          "actualMinimumVisibilityMs": 5000
+        },
+        {
+          "words": 35,
+          "calculatedReadingMs": 7636,
+          "actualMinimumVisibilityMs": 7636
+        },
+        {
+          "words": 50,
+          "calculatedReadingMs": 10909,
+          "actualMinimumVisibilityMs": 10909
+        },
+        {
+          "words": 70,
+          "calculatedReadingMs": 15273,
+          "actualMinimumVisibilityMs": 15273
+        },
+        {
+          "words": 90,
+          "calculatedReadingMs": 19636,
+          "actualMinimumVisibilityMs": 19636
+        }
+      ]
+    }
+  ],
+  "pacingScenarios": [
+    {
+      "name": "translation_faster_than_reader",
+      "wordsPerMinute": 245,
+      "passageCount": 30,
+      "durationMs": 580000,
+      "summary": {
+        "maxTranslationQueueWaitMs": 0,
+        "maxReadingQueueWaitMs": 0,
+        "maxTotalLagMs": 3500,
+        "averageTranslationQueueWaitMs": 0,
+        "averageReadingQueueWaitMs": 0,
+        "averageTotalLagMs": 3500
+      },
+      "passages": [
+        {
+          "sequenceNumber": 0,
+          "words": 20,
+          "arrivalAt": 0,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 1,
+          "words": 35,
+          "arrivalAt": 20000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 2,
+          "words": 50,
+          "arrivalAt": 40000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 3,
+          "words": 70,
+          "arrivalAt": 60000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 4,
+          "words": 35,
+          "arrivalAt": 80000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 5,
+          "words": 20,
+          "arrivalAt": 100000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 6,
+          "words": 35,
+          "arrivalAt": 120000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 7,
+          "words": 50,
+          "arrivalAt": 140000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 8,
+          "words": 70,
+          "arrivalAt": 160000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 9,
+          "words": 35,
+          "arrivalAt": 180000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 10,
+          "words": 20,
+          "arrivalAt": 200000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 11,
+          "words": 35,
+          "arrivalAt": 220000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 12,
+          "words": 50,
+          "arrivalAt": 240000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 13,
+          "words": 70,
+          "arrivalAt": 260000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 14,
+          "words": 35,
+          "arrivalAt": 280000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 15,
+          "words": 20,
+          "arrivalAt": 300000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 16,
+          "words": 35,
+          "arrivalAt": 320000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 17,
+          "words": 50,
+          "arrivalAt": 340000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 18,
+          "words": 70,
+          "arrivalAt": 360000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 19,
+          "words": 35,
+          "arrivalAt": 380000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 20,
+          "words": 20,
+          "arrivalAt": 400000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 21,
+          "words": 35,
+          "arrivalAt": 420000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 22,
+          "words": 50,
+          "arrivalAt": 440000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 23,
+          "words": 70,
+          "arrivalAt": 460000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 24,
+          "words": 35,
+          "arrivalAt": 480000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 25,
+          "words": 20,
+          "arrivalAt": 500000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 26,
+          "words": 35,
+          "arrivalAt": 520000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 27,
+          "words": 50,
+          "arrivalAt": 540000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 28,
+          "words": 70,
+          "arrivalAt": 560000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 29,
+          "words": 35,
+          "arrivalAt": 580000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 3500,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 3500,
+          "visiblePassageDurationMs": 8571
+        }
+      ]
+    },
+    {
+      "name": "reader_faster_than_translation",
+      "wordsPerMinute": 245,
+      "passageCount": 30,
+      "durationMs": 580000,
+      "summary": {
+        "maxTranslationQueueWaitMs": 87000,
+        "maxReadingQueueWaitMs": 0,
+        "maxTotalLagMs": 110000,
+        "averageTranslationQueueWaitMs": 43500,
+        "averageReadingQueueWaitMs": 0,
+        "averageTotalLagMs": 66500
+      },
+      "passages": [
+        {
+          "sequenceNumber": 0,
+          "words": 20,
+          "arrivalAt": 0,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 23000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 1,
+          "words": 35,
+          "arrivalAt": 20000,
+          "translationQueueWaitMs": 3000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 26000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 2,
+          "words": 50,
+          "arrivalAt": 40000,
+          "translationQueueWaitMs": 6000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 29000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 3,
+          "words": 70,
+          "arrivalAt": 60000,
+          "translationQueueWaitMs": 9000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 32000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 4,
+          "words": 35,
+          "arrivalAt": 80000,
+          "translationQueueWaitMs": 12000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 35000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 5,
+          "words": 20,
+          "arrivalAt": 100000,
+          "translationQueueWaitMs": 15000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 38000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 6,
+          "words": 35,
+          "arrivalAt": 120000,
+          "translationQueueWaitMs": 18000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 41000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 7,
+          "words": 50,
+          "arrivalAt": 140000,
+          "translationQueueWaitMs": 21000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 44000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 8,
+          "words": 70,
+          "arrivalAt": 160000,
+          "translationQueueWaitMs": 24000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 47000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 9,
+          "words": 35,
+          "arrivalAt": 180000,
+          "translationQueueWaitMs": 27000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 50000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 10,
+          "words": 20,
+          "arrivalAt": 200000,
+          "translationQueueWaitMs": 30000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 53000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 11,
+          "words": 35,
+          "arrivalAt": 220000,
+          "translationQueueWaitMs": 33000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 56000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 12,
+          "words": 50,
+          "arrivalAt": 240000,
+          "translationQueueWaitMs": 36000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 59000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 13,
+          "words": 70,
+          "arrivalAt": 260000,
+          "translationQueueWaitMs": 39000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 62000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 14,
+          "words": 35,
+          "arrivalAt": 280000,
+          "translationQueueWaitMs": 42000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 65000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 15,
+          "words": 20,
+          "arrivalAt": 300000,
+          "translationQueueWaitMs": 45000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 68000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 16,
+          "words": 35,
+          "arrivalAt": 320000,
+          "translationQueueWaitMs": 48000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 71000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 17,
+          "words": 50,
+          "arrivalAt": 340000,
+          "translationQueueWaitMs": 51000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 74000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 18,
+          "words": 70,
+          "arrivalAt": 360000,
+          "translationQueueWaitMs": 54000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 77000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 19,
+          "words": 35,
+          "arrivalAt": 380000,
+          "translationQueueWaitMs": 57000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 80000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 20,
+          "words": 20,
+          "arrivalAt": 400000,
+          "translationQueueWaitMs": 60000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 83000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 21,
+          "words": 35,
+          "arrivalAt": 420000,
+          "translationQueueWaitMs": 63000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 86000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 22,
+          "words": 50,
+          "arrivalAt": 440000,
+          "translationQueueWaitMs": 66000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 89000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 23,
+          "words": 70,
+          "arrivalAt": 460000,
+          "translationQueueWaitMs": 69000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 92000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 24,
+          "words": 35,
+          "arrivalAt": 480000,
+          "translationQueueWaitMs": 72000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 95000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 25,
+          "words": 20,
+          "arrivalAt": 500000,
+          "translationQueueWaitMs": 75000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 98000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 26,
+          "words": 35,
+          "arrivalAt": 520000,
+          "translationQueueWaitMs": 78000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 101000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 27,
+          "words": 50,
+          "arrivalAt": 540000,
+          "translationQueueWaitMs": 81000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 104000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 28,
+          "words": 70,
+          "arrivalAt": 560000,
+          "translationQueueWaitMs": 84000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 107000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 29,
+          "words": 35,
+          "arrivalAt": 580000,
+          "translationQueueWaitMs": 87000,
+          "translationLatencyMs": 23000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 110000,
+          "visiblePassageDurationMs": 8571
+        }
+      ]
+    },
+    {
+      "name": "temporary_translation_burst",
+      "wordsPerMinute": 245,
+      "passageCount": 30,
+      "durationMs": 480000,
+      "summary": {
+        "maxTranslationQueueWaitMs": 0,
+        "maxReadingQueueWaitMs": 16959,
+        "maxTotalLagMs": 20959,
+        "averageTranslationQueueWaitMs": 0,
+        "averageReadingQueueWaitMs": 3535,
+        "averageTotalLagMs": 7535
+      },
+      "passages": [
+        {
+          "sequenceNumber": 0,
+          "words": 20,
+          "arrivalAt": 0,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 1,
+          "words": 35,
+          "arrivalAt": 20000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 2,
+          "words": 50,
+          "arrivalAt": 27000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 1571,
+          "totalLagMs": 5571,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 3,
+          "words": 70,
+          "arrivalAt": 34000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 6816,
+          "totalLagMs": 10816,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 4,
+          "words": 35,
+          "arrivalAt": 41000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 16959,
+          "totalLagMs": 20959,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 5,
+          "words": 20,
+          "arrivalAt": 80000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 6,
+          "words": 35,
+          "arrivalAt": 100000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 7,
+          "words": 50,
+          "arrivalAt": 120000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 8,
+          "words": 70,
+          "arrivalAt": 127000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 5245,
+          "totalLagMs": 9245,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 9,
+          "words": 35,
+          "arrivalAt": 134000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 15388,
+          "totalLagMs": 19388,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 10,
+          "words": 20,
+          "arrivalAt": 141000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 16959,
+          "totalLagMs": 20959,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 11,
+          "words": 35,
+          "arrivalAt": 180000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 12,
+          "words": 50,
+          "arrivalAt": 200000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 13,
+          "words": 70,
+          "arrivalAt": 220000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 14,
+          "words": 35,
+          "arrivalAt": 227000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 10143,
+          "totalLagMs": 14143,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 15,
+          "words": 20,
+          "arrivalAt": 234000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 11714,
+          "totalLagMs": 15714,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 16,
+          "words": 35,
+          "arrivalAt": 241000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 9714,
+          "totalLagMs": 13714,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 17,
+          "words": 50,
+          "arrivalAt": 280000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 18,
+          "words": 70,
+          "arrivalAt": 300000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 19,
+          "words": 35,
+          "arrivalAt": 320000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 20,
+          "words": 20,
+          "arrivalAt": 327000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 1571,
+          "totalLagMs": 5571,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 21,
+          "words": 35,
+          "arrivalAt": 334000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 22,
+          "words": 50,
+          "arrivalAt": 341000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 1571,
+          "totalLagMs": 5571,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 23,
+          "words": 70,
+          "arrivalAt": 380000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 24,
+          "words": 35,
+          "arrivalAt": 400000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 25,
+          "words": 20,
+          "arrivalAt": 420000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 26,
+          "words": 35,
+          "arrivalAt": 427000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 27,
+          "words": 50,
+          "arrivalAt": 434000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 1571,
+          "totalLagMs": 5571,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 28,
+          "words": 70,
+          "arrivalAt": 441000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 6816,
+          "totalLagMs": 10816,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 29,
+          "words": 35,
+          "arrivalAt": 480000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        }
+      ]
+    },
+    {
+      "name": "one_30_second_translation_then_recovery",
+      "wordsPerMinute": 245,
+      "passageCount": 30,
+      "durationMs": 580000,
+      "summary": {
+        "maxTranslationQueueWaitMs": 10000,
+        "maxReadingQueueWaitMs": 15388,
+        "maxTotalLagMs": 30000,
+        "averageTranslationQueueWaitMs": 1333,
+        "averageReadingQueueWaitMs": 1544,
+        "averageTotalLagMs": 10344
+      },
+      "passages": [
+        {
+          "sequenceNumber": 0,
+          "words": 20,
+          "arrivalAt": 0,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 1,
+          "words": 35,
+          "arrivalAt": 20000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 2,
+          "words": 50,
+          "arrivalAt": 40000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 3,
+          "words": 70,
+          "arrivalAt": 60000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 4,
+          "words": 35,
+          "arrivalAt": 80000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 30000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 30000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 5,
+          "words": 20,
+          "arrivalAt": 100000,
+          "translationQueueWaitMs": 10000,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 4571,
+          "totalLagMs": 18571,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 6,
+          "words": 35,
+          "arrivalAt": 120000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 7,
+          "words": 50,
+          "arrivalAt": 140000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 8,
+          "words": 70,
+          "arrivalAt": 160000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 9,
+          "words": 35,
+          "arrivalAt": 180000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 10,
+          "words": 20,
+          "arrivalAt": 200000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 11,
+          "words": 35,
+          "arrivalAt": 220000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 12,
+          "words": 50,
+          "arrivalAt": 240000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 30000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 30000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 13,
+          "words": 70,
+          "arrivalAt": 260000,
+          "translationQueueWaitMs": 10000,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 8245,
+          "totalLagMs": 22245,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 14,
+          "words": 35,
+          "arrivalAt": 280000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 15388,
+          "totalLagMs": 19388,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 15,
+          "words": 20,
+          "arrivalAt": 300000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 3959,
+          "totalLagMs": 7959,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 16,
+          "words": 35,
+          "arrivalAt": 320000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 17,
+          "words": 50,
+          "arrivalAt": 340000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 18,
+          "words": 70,
+          "arrivalAt": 360000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 19,
+          "words": 35,
+          "arrivalAt": 380000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 20,
+          "words": 20,
+          "arrivalAt": 400000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 30000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 30000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 21,
+          "words": 35,
+          "arrivalAt": 420000,
+          "translationQueueWaitMs": 10000,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 1000,
+          "totalLagMs": 15000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 22,
+          "words": 50,
+          "arrivalAt": 440000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 23,
+          "words": 70,
+          "arrivalAt": 460000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 24,
+          "words": 35,
+          "arrivalAt": 480000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 25,
+          "words": 20,
+          "arrivalAt": 500000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 5000
+        },
+        {
+          "sequenceNumber": 26,
+          "words": 35,
+          "arrivalAt": 520000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 8571
+        },
+        {
+          "sequenceNumber": 27,
+          "words": 50,
+          "arrivalAt": 540000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 4000,
+          "visiblePassageDurationMs": 12245
+        },
+        {
+          "sequenceNumber": 28,
+          "words": 70,
+          "arrivalAt": 560000,
+          "translationQueueWaitMs": 0,
+          "translationLatencyMs": 30000,
+          "readingQueueWaitMs": 0,
+          "totalLagMs": 30000,
+          "visiblePassageDurationMs": 17143
+        },
+        {
+          "sequenceNumber": 29,
+          "words": 35,
+          "arrivalAt": 580000,
+          "translationQueueWaitMs": 10000,
+          "translationLatencyMs": 4000,
+          "readingQueueWaitMs": 13143,
+          "totalLagMs": 27143,
+          "visiblePassageDurationMs": 8571
+        }
+      ]
+    }
+  ],
+  "baselineLatencyBudget": {
+    "components": {
+      "audioCaptureMs": 8000,
+      "transcriptionQueueWaitMs": 0,
+      "whisperLatencyMs": 2000,
+      "bufferWaitMs": 20000,
+      "translationQueueWaitMs": 0,
+      "translationLatencyMs": 5000,
+      "readingQueueWaitMs": 0
+    },
+    "totalUserVisibleLagMs": 35000,
+    "largestContributor": "bufferWaitMs"
+  }
+}

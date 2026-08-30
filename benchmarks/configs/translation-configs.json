@@ -1,0 +1,20 @@
+{
+  "current": {
+    "label": "CURRENT",
+    "model": "claude-haiku-4-5-20251001",
+    "promptSource": "api/translate.js#SYSTEM_PROMPT",
+    "production": true
+  },
+  "candidate_a": {
+    "label": "CANDIDATE_A",
+    "model": "claude-haiku-4-5-20251001",
+    "promptSource": "benchmarks/prompts/candidate-a.txt",
+    "production": false
+  },
+  "candidate_b": {
+    "label": "CANDIDATE_B",
+    "model": "claude-haiku-4-5-20251001",
+    "promptSource": "benchmarks/prompts/candidate-b.txt",
+    "production": false
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kashf.nl/benchmarks/schema-v1.json",
+  "title": "Kashf Speech & Translation Quality Gate fixture",
+  "type": "object",
+  "required": ["id", "split", "category", "languageProfile", "verificationStatus", "difficulty", "provenance"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]+$" },
+    "split": { "enum": ["development", "evaluation"] },
+    "category": { "enum": ["formal_arabic", "quran", "hadith", "terminology", "darija", "mixed_ar_darija", "audio_condition", "failure_safety", "dutch_style", "presentation"] },
+    "languageProfile": { "enum": ["ar", "darija", "mixed_ar_darija", "quran_ar", "hadith_ar", "non_speech", "nl_output"] },
+    "verificationStatus": { "enum": ["synthetic", "human_verified"] },
+    "audioFixture": { "type": ["string", "null"] },
+    "expectedTranscript": { "type": ["string", "null"] },
+    "observedTranscript": { "type": ["string", "null"] },
+    "expectedDecision": { "enum": ["accept", "reject", "not_applicable"] },
+    "expectedCoreMeaning": { "type": ["string", "null"] },
+    "importantReligiousTerms": { "type": "array", "items": { "type": "string" } },
+    "forbiddenMeaningChanges": { "type": "array", "items": { "type": "string" } },
+    "expectedDutchCharacteristics": { "type": "array", "items": { "type": "string" } },
+    "referenceTranslation": { "type": ["string", "null"] },
+    "candidateOutputs": { "type": "object", "additionalProperties": { "type": "string" } },
+    "probeOutput": { "type": "string" },
+    "expectedHardFailures": { "type": "array", "items": { "type": "string" } },
+    "sequenceNumbers": { "type": "array", "items": { "type": "integer" } },
+    "latency": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+    "difficulty": { "enum": ["low", "medium", "high"] },
+    "notes": { "type": "string" },
+    "provenance": {
+      "type": "object",
+      "required": ["origin", "licenseOrConsent"],
+      "properties": {
+        "origin": { "type": "string" },
+        "licenseOrConsent": { "type": "string" },
+        "anonymous": { "type": "boolean" }
+      }
+    }
+  }
+}

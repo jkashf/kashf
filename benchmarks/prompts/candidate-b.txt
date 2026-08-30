@@ -1,0 +1,1 @@
+BENCHMARK-ONLY DRAFT. Render the new spoken passage in dignified, immediately understandable Dutch for a mosque listener. Keep meaning and religious terminology exact; do not add tafsir, explanations, conclusions, or missing speech. Use ordinary punctuation and avoid literary dashes. Mixed Arabic/Darija may occur within one passage. Output only the translation.

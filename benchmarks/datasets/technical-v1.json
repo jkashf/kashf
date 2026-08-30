@@ -1,0 +1,55 @@
+{
+  "datasetVersion": "1.0.0",
+  "description": "Technical regression fixtures only. These synthetic cases do not establish real Arabic or Darija accuracy.",
+  "fixtures": [
+    {
+      "id": "silence_ar_boilerplate_reject", "split": "development", "category": "failure_safety", "languageProfile": "non_speech", "verificationStatus": "synthetic", "difficulty": "low",
+      "audioFixture": null, "expectedTranscript": null, "observedTranscript": "اشتركوا في القناة", "expectedDecision": "reject",
+      "expectedCoreMeaning": null, "importantReligiousTerms": [], "forbiddenMeaningChanges": ["store boilerplate as khutbah speech"], "expectedDutchCharacteristics": [], "referenceTranslation": null,
+      "candidateOutputs": { "current": "" }, "notes": "Derived from the existing hallucination regression test; no real audio claim.",
+      "provenance": { "origin": "tests/pipeline.test.js", "licenseOrConsent": "repository-owned synthetic fixture", "anonymous": true }
+    },
+    {
+      "id": "real_short_religious_speech_accept", "split": "evaluation", "category": "failure_safety", "languageProfile": "ar", "verificationStatus": "synthetic", "difficulty": "medium",
+      "audioFixture": null, "expectedTranscript": "شكرا", "observedTranscript": "شكرا", "expectedDecision": "accept",
+      "expectedCoreMeaning": "thanks", "importantReligiousTerms": [], "forbiddenMeaningChanges": ["reject solely because the phrase is short"], "expectedDutchCharacteristics": ["concise"], "referenceTranslation": null,
+      "candidateOutputs": { "current": "Dank u." }, "notes": "Technical acceptance fixture with strong metadata; not evidence of STT accuracy.",
+      "provenance": { "origin": "tests/khutbah-buffer.test.js", "licenseOrConsent": "repository-owned synthetic fixture", "anonymous": true }
+    },
+    {
+      "id": "dutch_shaytan_terminology", "split": "development", "category": "terminology", "languageProfile": "nl_output", "verificationStatus": "synthetic", "difficulty": "low",
+      "audioFixture": null, "expectedTranscript": null, "observedTranscript": null, "expectedDecision": "not_applicable",
+      "expectedCoreMeaning": null, "importantReligiousTerms": ["shaytan"], "forbiddenMeaningChanges": [], "expectedDutchCharacteristics": ["use shaytan, not sjietan"], "referenceTranslation": null,
+      "candidateOutputs": { "current": "Shaytan probeert de mens af te leiden." }, "notes": "Style regression based on a user-observed iPhone output; source meaning is intentionally not asserted.",
+      "provenance": { "origin": "user-reported Kashf regression", "licenseOrConsent": "user-provided text example", "anonymous": true }
+    },
+    {
+      "id": "wrong_allah_honorific_hard_fail", "split": "evaluation", "category": "failure_safety", "languageProfile": "nl_output", "verificationStatus": "synthetic", "difficulty": "low",
+      "audioFixture": null, "expectedTranscript": null, "observedTranscript": null, "expectedDecision": "not_applicable",
+      "expectedCoreMeaning": null, "importantReligiousTerms": ["Allah ﷻ"], "forbiddenMeaningChanges": ["Allah ﷺ"], "expectedDutchCharacteristics": ["correct honorific"], "referenceTranslation": null,
+      "candidateOutputs": { "current": "" }, "probeOutput": "Allah ﷺ kent wat in de harten is.", "expectedHardFailures": ["WRONG_ALLAH_HONORIFIC"], "notes": "Deliberately failing safety probe; excluded from candidate averages and used to test hard-failure detection.",
+      "provenance": { "origin": "repository regression requirement", "licenseOrConsent": "repository-owned synthetic fixture", "anonymous": true }
+    },
+    {
+      "id": "meta_output_hard_fail", "split": "evaluation", "category": "failure_safety", "languageProfile": "nl_output", "verificationStatus": "synthetic", "difficulty": "low",
+      "audioFixture": null, "expectedTranscript": null, "observedTranscript": null, "expectedDecision": "not_applicable",
+      "expectedCoreMeaning": null, "importantReligiousTerms": [], "forbiddenMeaningChanges": ["model analysis visible"], "expectedDutchCharacteristics": ["translation only"], "referenceTranslation": null,
+      "candidateOutputs": { "current": "" }, "probeOutput": "I cannot provide a reliable translation of this passage.", "expectedHardFailures": ["META_OUTPUT"], "notes": "Deliberately failing safety probe for the output validator.",
+      "provenance": { "origin": "tests/translate-api.test.mjs", "licenseOrConsent": "repository-owned synthetic fixture", "anonymous": true }
+    },
+    {
+      "id": "dash_overuse_probe", "split": "development", "category": "dutch_style", "languageProfile": "nl_output", "verificationStatus": "synthetic", "difficulty": "low",
+      "audioFixture": null, "expectedTranscript": null, "observedTranscript": null, "expectedDecision": "not_applicable",
+      "expectedCoreMeaning": null, "importantReligiousTerms": [], "forbiddenMeaningChanges": [], "expectedDutchCharacteristics": ["normal punctuation", "few dashes"], "referenceTranslation": null,
+      "candidateOutputs": { "current": "Gedenk Allah veel – in voorspoed en tegenspoed – en blijf dankbaar – iedere dag opnieuw." }, "notes": "Deliberately awkward style probe, not a reference translation.",
+      "provenance": { "origin": "user-reported punctuation pattern", "licenseOrConsent": "user-provided pattern, synthetic sentence", "anonymous": true }
+    },
+    {
+      "id": "sequence_integrity_probe", "split": "evaluation", "category": "presentation", "languageProfile": "nl_output", "verificationStatus": "synthetic", "difficulty": "low",
+      "audioFixture": null, "expectedTranscript": null, "observedTranscript": null, "expectedDecision": "not_applicable",
+      "expectedCoreMeaning": null, "importantReligiousTerms": [], "forbiddenMeaningChanges": ["drop or reorder passages"], "expectedDutchCharacteristics": [], "referenceTranslation": null,
+      "candidateOutputs": { "current": "Technische sequencefixture." }, "sequenceNumbers": [0, 1, 2, 3], "notes": "Checks infrastructure ordering only.",
+      "provenance": { "origin": "tests/concurrency.test.js", "licenseOrConsent": "repository-owned synthetic fixture", "anonymous": true }
+    }
+  ]
+}
