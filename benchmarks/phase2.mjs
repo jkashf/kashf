@@ -14,7 +14,7 @@ const manifest = JSON.parse(await fs.readFile(path.join(root, 'datasets', 'real-
 const fixtures = materializeManifest(manifest);
 const audioRoot = path.join(root, 'fixtures', 'audio');
 const statuses = await Promise.all(fixtures.map(item => fixtureStatus(item, audioRoot)));
-const translationConfigurations = ['current', 'candidate_a', 'candidate_b'];
+const translationConfigurations = ['current', 'candidate_a', 'candidate_b', 'candidate_c'];
 const plan = requestPlan(statuses, Object.keys(STT_CONFIGS), translationConfigurations);
 
 if (command === 'live-plan') {
@@ -40,7 +40,7 @@ const lifecycleAnalysis = analyzeLifecycle(lifecycleFixture);
 const pacingComparison = compareLifecyclePacing(lifecycleFixture);
 const translationTracks = fixtures.slice(0, 1).flatMap(fixture => buildTranslationTracks(fixture, [], translationConfigurations));
 const seed = 'kashf-quality-gate-v2';
-const blindPreview = blindVariants({ current: '', candidate_a: '', candidate_b: '' }, seed, fixtures[0].id);
+const blindPreview = blindVariants({ current: '', candidate_a: '', candidate_b: '', candidate_c: '' }, seed, fixtures[0].id);
 const report = {
   phase: 2, mode: 'dry_run', generatedAt: new Date().toISOString(), liveApiCallsExecuted: false,
   supportedAudioFormats: ['mp3', 'm4a', 'wav', 'webm'], fixtureCounts: { total: fixtures.length, ready: statuses.filter(item => item.status === 'ready').length, notRun: statuses.filter(item => item.status === 'not_run').length, rejected: statuses.filter(item => item.status === 'rejected').length },

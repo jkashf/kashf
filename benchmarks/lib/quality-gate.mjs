@@ -25,16 +25,46 @@ export function errorRate(reference, hypothesis, unit = 'word') {
 export function textMetrics(text) {
   const normalized = String(text || '').trim();
   const words = normalize(normalized).split(' ').filter(Boolean);
+  const emDashCount = (normalized.match(/—/g) || []).length;
   const dashCount = (normalized.match(/[–—]/g) || []).length;
+  const sentences = normalized.split(/(?<=[.!?])\s+|\n+/u).map(sentence => sentence.trim()).filter(Boolean);
+  const sentenceWordCounts = sentences.map(sentence => normalize(sentence).split(' ').filter(Boolean).length);
+  const maxSentenceWordCount = sentenceWordCounts.length ? Math.max(...sentenceWordCounts) : 0;
+  const longSentenceCount = sentenceWordCounts.filter(count => count > 28).length;
+  const clauseMarkers = /\b(?:dat|die|waarvan|waardoor|terwijl|wanneer|omdat|hoewel|zodat|doordat|hetgeen|want)\b|,/giu;
+  const nestedClauseRisk = sentences.filter(sentence => (sentence.match(clauseMarkers) || []).length >= 3).length;
+  const translationesePatterns = [
+    /\bdaaruit voortvloei\w*\b/iu, /\bvoordelige gevolgen van uit\b/iu, /\btot aan de genoemde\b/iu,
+    /\bde voortreffelijkheid van\b/iu, /\bverheven zij zijn vermelding\b/iu, /\bhet doen herleven van\b/iu,
+    /\bverstomming\b/iu, /\bglans en luister van het gevoel\b/iu, /\b(?:inderdaad|waarlijk)\b/giu
+  ];
+  const translationeseSignals = translationesePatterns.flatMap(pattern => normalized.match(pattern) || []);
+  const unclearReferencePatterns = [/\bervan\b/giu, /\bdaaruit\b/giu, /\bhetgeen\b/giu, /^\s*het\b/iu, /\bhet staat tussen\b/iu, /\bhet wekt hem\b/iu];
+  const unclearReferenceSignals = unclearReferencePatterns.flatMap(pattern => normalized.match(pattern) || []);
+  const literalHonorificPattern = /(?:Allah\s*[—–-]\s*verheven zij Zijn vermelding|Ibn al-Qayyim\s*[—–-]\s*Allah zij barmhartig voor hem)/iu;
   const awkwardPatterns = [/\bwaarschuwer\b/i, /\buitnodiging naar (?:hem|allah)\b/i, /\buit zijn verderf\b/i, /\bsjiet(?:an|aan)\b/i, /\bsjeitan\b/i]
     .filter(pattern => pattern.test(normalized)).map(pattern => pattern.source);
-  return { wordCount: words.length, dashCount, dashPer100Words: words.length ? (dashCount / words.length) * 100 : 0, awkwardPatterns };
+  return {
+    wordCount: words.length, dashCount, dashPer100Words: words.length ? (dashCount / words.length) * 100 : 0,
+    emDashCount, emDashPer100Words: words.length ? (emDashCount / words.length) * 100 : 0,
+    longSentenceCount, maxSentenceWordCount, nestedClauseRisk,
+    translationeseSignalCount: translationeseSignals.length,
+    unclearReferenceSignalCount: unclearReferenceSignals.length,
+    literalHonorificSignalCount: literalHonorificPattern.test(normalized) ? 1 : 0,
+    readabilityWarnings: [
+      ...(emDashCount ? ['em_dash'] : []), ...(longSentenceCount ? ['long_sentence'] : []),
+      ...(nestedClauseRisk ? ['nested_clause_risk'] : []), ...(translationeseSignals.length ? ['translationese'] : []),
+      ...(unclearReferenceSignals.length ? ['unclear_reference'] : []), ...(literalHonorificPattern.test(normalized) ? ['literal_honorific'] : [])
+    ], awkwardPatterns
+  };
 }
 
 const META_OUTPUT = /\b(?:i cannot|i can't|the passage appears|possible transcription error|as an ai|linguistic analysis|please verify)\b/i;
 export function hardFailures({ output = '', expectedDecision, observedDecision, sequenceNumbers = [] } = {}) {
   const failures = [];
   if (/Allah\s*ﷺ/u.test(output)) failures.push('WRONG_ALLAH_HONORIFIC');
+  if (/Allah\s*عليه السلام/u.test(output)) failures.push('WRONG_ALLAH_HONORIFIC');
+  if (/(?:Profeet\s+Muhammad|de Profeet)\s*ﷻ/iu.test(output)) failures.push('WRONG_PROPHET_HONORIFIC');
   if (META_OUTPUT.test(output)) failures.push('META_OUTPUT');
   if (expectedDecision === 'reject' && observedDecision === 'accept') failures.push('SILENCE_HALLUCINATION_STORED');
   if (sequenceNumbers.some((value, index) => index && value <= sequenceNumbers[index - 1])) failures.push('SEQUENCE_ORDER_CORRUPTION');
@@ -59,7 +89,7 @@ export function scoreFixture(fixture, configuration = 'current') {
   };
 }
 
-export const QUALITY_THRESHOLDS = Object.freeze({ hardReligiousOrSafetyFailures: 0, metaOutputFailures: 0, sequenceIntegrityPercent: 100, silenceFixtureRejectPercent: 100, meaningFidelityHumanAverage: 8, dutchNaturalnessHumanAverage: 8, religiousIntegrityHumanMinimum: 9, dashPer100WordsReviewAbove: 2 });
+export const QUALITY_THRESHOLDS = Object.freeze({ hardReligiousOrSafetyFailures: 0, metaOutputFailures: 0, sequenceIntegrityPercent: 100, silenceFixtureRejectPercent: 100, meaningFidelityHumanAverage: 8, dutchNaturalnessHumanAverage: 8, firstReadComprehensionHumanAverage: 8.5, firstReadComprehensionSeriousCaseReviewBelow: 7, religiousIntegrityHumanMinimum: 9, emDashPer100WordsTarget: 0, emDashPer100WordsReviewAbove: 0, emDashPer100WordsPresentationFailureCandidateAbove: 2 });
 
 export function latencyBudget(latency = {}) {
   const components = { audioCaptureMs: latency.audioCaptureMs || 0, transcriptionQueueWaitMs: latency.transcriptionQueueWaitMs || 0, whisperLatencyMs: latency.whisperLatencyMs || 0, bufferWaitMs: latency.bufferWaitMs || 0, translationQueueWaitMs: latency.translationQueueWaitMs || 0, translationLatencyMs: latency.translationLatencyMs || 0, readingQueueWaitMs: latency.readingQueueWaitMs || 0 };

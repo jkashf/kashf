@@ -13,6 +13,7 @@ node benchmarks/phase2.mjs dry-run
 node benchmarks/phase2.mjs live-plan
 node benchmarks/phase2.mjs summarize-reviews
 node benchmarks/phase2.test.mjs
+node benchmarks/style-contract.test.mjs
 ```
 
 The runner makes no network or paid provider calls. It writes:
@@ -75,9 +76,9 @@ Provider calls must be opt-in, server/local only, never expose keys, and never d
 
 ## Translation A/B
 
-`configs/translation-configs.json` defines CURRENT and benchmark-only candidate prompts. Candidate outputs can be imported into a fixture or a separate local result file. The HTML report deliberately labels them Variant A/B/C. No candidate is promoted automatically.
+`configs/translation-configs.json` defines CURRENT and benchmark-only candidate prompts. Candidate C applies `contracts/kashf-translation-style-v1.md`; it is not used by production. Candidate outputs can be imported into a fixture or a separate local result file. The HTML report deliberately uses neutral variant labels. No candidate is promoted automatically.
 
-Human reviewers score meaning, natural Dutch, religious integrity, completeness and overall preference. Automatic lexical flags support review but do not replace it.
+Human reviewers score meaning, natural Dutch, religious integrity, completeness, first-read comprehension and overall preference. First-read comprehension asks whether the passage was immediately understood after one reading. Automatic lexical flags support review but do not replace it.
 
 ## Initial release-gate proposal
 
@@ -93,7 +94,8 @@ Provisional and human-reviewed until a representative dataset exists:
 
 - mean meaning fidelity ≥ 8/10;
 - mean Dutch naturalness ≥ 8/10;
+- mean first-read comprehension ≥ 8.5/10, with serious cases below 7 requiring review;
 - religious integrity ≥ 9/10 for every Qur'an/hadith case;
-- dash use above 2 per 100 words triggers review, not automatic rejection.
+- target em-dash use is zero; every em dash triggers a readability warning and above 2 per 100 words is a presentation-failure candidate, not automatic semantic rejection.
 
 WER/CER becomes reportable only for `human_verified` transcripts. Dialect spelling variation means it must be interpreted together with omissions, hallucinations and religious-term preservation.

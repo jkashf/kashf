@@ -9,24 +9,36 @@
       "dutchNaturalness": null,
       "religiousIntegrity": null,
       "completeness": null,
-      "liveReadability": null
+      "liveReadability": null,
+      "firstReadComprehension": null
     },
     "Variant B": {
       "meaningFidelity": null,
       "dutchNaturalness": null,
       "religiousIntegrity": null,
       "completeness": null,
-      "liveReadability": null
+      "liveReadability": null,
+      "firstReadComprehension": null
     },
     "Variant C": {
       "meaningFidelity": null,
       "dutchNaturalness": null,
       "religiousIntegrity": null,
       "completeness": null,
-      "liveReadability": null
+      "liveReadability": null,
+      "firstReadComprehension": null
+    },
+    "Variant D": {
+      "meaningFidelity": null,
+      "dutchNaturalness": null,
+      "religiousIntegrity": null,
+      "completeness": null,
+      "liveReadability": null,
+      "firstReadComprehension": null
     }
   },
   "preferredVariant": "tie",
   "flags": [],
+  "firstReadQuestion": "Kon je deze passage bij één keer lezen onmiddellijk begrijpen zonder terug te lezen?",
   "notes": ""
 }

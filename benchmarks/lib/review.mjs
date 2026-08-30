@@ -22,4 +22,14 @@ export function aggregateReviews(reviews) {
   });
 }
 
-export const REVIEW_FLAGS = Object.freeze(['meaning_lost', 'meaning_added', 'awkward_dutch', 'religious_concern', 'quran_concern', 'hadith_concern', 'terminology', 'punctuation', 'other']);
+export const REVIEW_FLAGS = Object.freeze(['meaning_lost', 'meaning_added', 'awkward_dutch', 'religious_concern', 'quran_concern', 'hadith_concern', 'terminology', 'punctuation', 'reread_required', 'translationese', 'excessive_dash', 'confusing_honorific', 'unclear_pronoun_reference', 'sentence_structure_too_complex', 'other']);
+
+export const REVIEW_RUBRIC = Object.freeze({
+  firstReadComprehension: {
+    question: 'Kon je deze passage bij één keer lezen onmiddellijk begrijpen zonder terug te lezen?',
+    scale: [0, 10], targetAverage: 8.5, seriousCaseReviewBelow: 7
+  },
+  dutchNaturalness: { scale: [0, 10], targetAverage: 8 },
+  meaningFidelity: { scale: [0, 10], targetAverage: 8 },
+  religiousIntegrity: { scale: [0, 10], religiousFixtureMinimum: 9 }
+});

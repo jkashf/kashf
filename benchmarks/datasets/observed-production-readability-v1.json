@@ -1,0 +1,15 @@
+{
+  "datasetVersion": "1.0.0",
+  "description": "Observed Kashf production outputs for detector testing only. They are not human-verified source translations and must not be used as semantic ground truth.",
+  "verificationStatus": "observed_production_output",
+  "fixtures": [
+    { "id": "observed_family_consequences", "output": "want voor zijn familie gelden daar de voordelige gevolgen van uit en de hoge graden in dit leven en in het hiernamaals.", "expectedSignals": ["translationese"] },
+    { "id": "observed_purest_rank", "output": "het zuiverste ervan, wat jullie koning het meest behaagt en jullie in rangen verheft", "expectedSignals": ["unclear_reference"] },
+    { "id": "observed_reviving_heart", "output": "Het doen herleven van het hart dat dood was, en het staat tussen de mens en zijn achteloosheid, en het wekt hem op uit zijn verstomming.", "expectedSignals": ["translationese", "nested_clause_risk", "unclear_reference"] },
+    { "id": "observed_vitality_feeling", "output": "Het wordt zo een oorzaak voor de vitaliteit en sterkte van het lichaam, en voor de glans en luister van het gevoel.", "expectedSignals": ["translationese", "unclear_reference"] },
+    { "id": "observed_until_mentioned", "output": "tot aan de genoemde, tot de degene die dhikr doet zelf genoemd wordt.", "expectedSignals": ["translationese"] },
+    { "id": "observed_allah_literal_honorific", "output": "Allah — verheven zij Zijn vermelding — zei:", "expectedSignals": ["em_dash", "translationese", "literal_honorific"] },
+    { "id": "observed_scholar_literal_honorific", "output": "Ibn al-Qayyim — Allah zij barmhartig voor hem — zei:", "expectedSignals": ["em_dash", "literal_honorific"] },
+    { "id": "observed_dhikr_greater", "output": "O gelovigen, dhikr van Allah is groter dan alles, want het is de beste vorm van gehoorzaamheid.", "expectedSignals": ["review_required"] }
+  ]
+}

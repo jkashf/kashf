@@ -1,4 +1,4 @@
-export function buildTranslationTracks(fixture, sttResults, configurations = ['current', 'candidate_a', 'candidate_b']) {
+export function buildTranslationTracks(fixture, sttResults, configurations = ['current', 'candidate_a', 'candidate_b', 'candidate_c']) {
   const tracks = [];
   if (fixture.humanVerified && fixture.referenceTranscript) {
     for (const configuration of configurations) tracks.push({ fixtureId: fixture.id, track: 'reference_transcript', configuration, sourceText: fixture.referenceTranscript, sourceSttConfiguration: null, status: 'ready' });

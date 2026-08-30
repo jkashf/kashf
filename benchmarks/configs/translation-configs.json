@@ -16,5 +16,12 @@
     "model": "claude-haiku-4-5-20251001",
     "promptSource": "benchmarks/prompts/candidate-b.txt",
     "production": false
+  },
+  "candidate_c": {
+    "label": "CANDIDATE_C",
+    "model": "claude-haiku-4-5-20251001",
+    "promptSource": "benchmarks/prompts/candidate-c.txt",
+    "production": false,
+    "styleContract": "benchmarks/contracts/kashf-translation-style-v1.md"
   }
 }

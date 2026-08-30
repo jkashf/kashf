@@ -44,7 +44,7 @@ assert.ok(tracksMissing.some(item => item.track === 'stt_output' && item.status 
 const verified = { ...fixtures[0], humanVerified: true, referenceTranscript: 'مرجع' };
 assert.ok(buildTranslationTracks(verified, []).every(item => item.track !== 'reference_transcript' || item.status === 'ready'));
 
-const outputs = { current: 'een', candidate_a: 'twee', candidate_b: 'drie' };
+const outputs = { current: 'een', candidate_a: 'twee', candidate_b: 'drie', candidate_c: 'vier' };
 assert.deepEqual(blindVariants(outputs, 'seed', 'fixture'), blindVariants(outputs, 'seed', 'fixture'));
 assert.notDeepEqual(blindVariants(outputs, 'seed', 'fixture'), blindVariants(outputs, 'other-seed', 'fixture'));
 const review1 = serializeReview({ fixtureId: 'f', reviewerId: 'r1', variantScores: { 'Variant A': { meaningFidelity: 8 } }, preferredVariant: 'Variant A' });
@@ -71,7 +71,7 @@ assert.equal(pacing.length, 10);
 assert.ok(pacing.every(item => Object.hasOwn(item, 'accumulatedReadingLagMs')));
 
 const statuses = await Promise.all(fixtures.map(item => fixtureStatus(item, '.')));
-const plan = requestPlan(statuses, Object.keys(STT_CONFIGS), ['current', 'candidate_a', 'candidate_b']);
+const plan = requestPlan(statuses, Object.keys(STT_CONFIGS), ['current', 'candidate_a', 'candidate_b', 'candidate_c']);
 assert.equal(plan.runnableFixtures, 0);
 assert.equal(plan.estimatedSttRequests, 0);
 assert.throws(() => assertLiveOptIn([]), /EXPLICIT_CONFIRMATION/);
